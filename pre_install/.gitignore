@@ -1,0 +1,4 @@
+*.img
+*.iso
+squashfs-root/
+OVMF.fd

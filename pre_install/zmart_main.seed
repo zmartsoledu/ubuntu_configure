@@ -1,0 +1,64 @@
+####
+# http://ubuntuforums.org/showthread.php?t=2215103
+# https://bugs.launchpad.net/ubuntu/+source/debian-installer/+bug/1347726
+d-i preseed/early_command string umount /media || true
+
+d-i base-installer/excludes string os-prober
+d-i debian-installer/framebuffer boolean false
+d-i debian-installer/locale string en_GB
+d-i console-setup/ask_detect boolean false
+d-i keyboard-configuration/layoutcode string gb
+d-i netcfg/get_hostname string preseeded
+d-i netcfg/choose_interface select auto
+
+d-i debian-installer/country string GB
+d-i debian-installer/language string en
+
+d-i mirror/country string GB
+d-i mirror/http/countries select GB
+d-i mirror/http/hostname string archive.ubuntu.com
+d-i mirror/http/directory string /ubuntu
+d-i mirror/http/proxy string
+d-i mirror/http/mirror select gb.archive.ubuntu.com
+
+d-i clock-setup/utc boolean true
+d-i time/zone string Europe/London
+d-i clock-setup/ntp boolean true
+
+d-i partman/early_command string \
+	USBDEV=$(list-devices usb-partition | sed "s/\(.*\)./\1/");\
+	if [ ! -z "$USBDEV" ]; then \
+		BOOTDEV=$(list-devices disk | grep -v "$USBDEV" | head -1);\
+	else \
+		BOOTDEV=$(list-devices disk | head -1);\
+	fi; \
+	debconf-set partman-auto/disk $BOOTDEV;\
+	debconf-set grub-installer/bootdev $BOOTDEV;\
+	debconf-set partman/default_filesystem string ext4
+	lvremove --select all -ff -y; vgremove --select all -ff -y; pvremove ${BOOTDEV}* -ff -y
+
+d-i passwd/root-login boolean false
+d-i user-setup/encrypt-home boolean false
+
+d-i apt-setup/universe boolean true
+d-i apt-setup/security_host string security.ubuntu.com
+d-i apt-setup/security_path string /ubuntu
+
+tasksel tasksel/first multiselect server
+# tasksel tasksel/first multiselect openssh-server
+
+# d-i pkgsel/include string openssh-server build-essential dkms git vim aptitude apt-transport-https ca-certificates curl software-properties-common
+d-i pkgsel/include string openssh-server build-essential dkms git vim aptitude apt-transport-https ca-certificates curl software-properties-common network-manager
+d-i pkgsel/upgrade select safe-upgrade
+d-i pkgsel/language-packs multiselect en
+d-i pkgsel/update-policy select none
+d-i pkgsel/updatedb boolean false
+d-i grub-installer/only_debian boolean true
+
+# get target to start with a text console instead of this plymouth nonsense that crashes and prevents login
+d-i preseed/late_command string \
+  cp /cdrom/target_skeleton/* /target/. -R
+
+d-i finish-install/reboot_in_progress note
+d-i debian-installer/exit/poweroff boolean true
+

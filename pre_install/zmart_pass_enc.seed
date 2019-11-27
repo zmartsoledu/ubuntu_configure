@@ -1,0 +1,3 @@
+d-i partman-crypto/passphrase password ubuntu
+d-i partman-crypto/passphrase-again password ubuntu
+

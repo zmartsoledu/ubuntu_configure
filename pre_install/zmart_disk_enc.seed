@@ -1,0 +1,55 @@
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-auto/purge_lvm_from_device boolean true
+d-i partman-lvm/confirm boolean true
+d-i partman-lvm/confirm_nooverwrite boolean true
+
+d-i partman-auto/method string crypto
+d-i partman-crypto/erase_data boolean false
+d-i partman-crypto/weak_passphrase boolean true
+d-i partman-auto-lvm/new_vg_name string vg-main-crypt
+d-i partman-auto-lvm/guided_size string max
+d-i partman-auto/choose_recipe select lvm-main
+
+d-i partman-auto/expert_recipe string                         \
+      lvm-main ::                                             \
+              1 1 1 free                                      \
+                      $bios_boot{ }                           \
+                      method{ biosgrub }                      \
+              .                                               \
+              512 40 512 fat32                                \
+                      $primary{ }                             \
+                      $lvmignore{ }                           \
+                      method{ efi }                           \
+                      format{ }                               \
+              .                                               \
+              1536 1536 1536 ext2                             \
+                      $primary{ } $bootable{ }                \
+                      method{ format } format{ }              \
+                      use_filesystem{ } filesystem{ ext2 }    \
+                      mountpoint{ /boot }                     \
+              .                                               \
+              2048 2048 2048 linux-swap                       \
+                      $lvmok{ } lv_name{ swap }               \
+                      in_vg { vg-main-crypt }                 \
+                      $primary{ }                             \
+                      method{ swap } format{ }                \
+              .                                               \
+              500 10000 1000000000 ext4                       \
+                      $lvmok{ } lv_name{ root }               \
+                      in_vg { vg-main-crypt }                 \
+                      $primary{ }                             \
+                      method{ format } format{ }              \
+                      use_filesystem{ } filesystem{ ext4 }    \
+                      mountpoint{ / }                         \
+              .
+
+d-i partman-md/confirm boolean true
+d-i partman-md/confirm_nooverwrite boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-basicfilesystems/no_mount_point boolean false
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+d-i partman/confirm_write_new_label boolean true
+

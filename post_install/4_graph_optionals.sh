@@ -33,6 +33,13 @@ audio-recorder
 libcanberra-gtk-module
 apt-transport-tor"
 
+which simplescreenrecorder >/dev/null 2>&1
+if [ "$?" != "0" ];
+	func_print_info_message "attempting to install simplescreenrecorder via ppa"
+	sudo add-apt-repository ppa:maarten-baert/simplescreenrecorder
+	apt_install_auto_yes "simplescreenrecorder"
+fi
+
 # if you want to disable tor browser installation, change the 'true' to 'false' in the line below
 if true; then
 	add_ppa micahflee/ppa

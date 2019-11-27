@@ -10,6 +10,7 @@ source ./common_bash_funcs.sh
 echo "downloading the daily snapshot of pci ids database"
 update-pciids
 
+apt_install_auto_yes lshw
 echo "attempting to list the available display devices via lshw"
 lshw -C display
 

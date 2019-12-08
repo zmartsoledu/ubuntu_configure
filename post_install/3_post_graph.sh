@@ -23,7 +23,8 @@ apt_group_install_auto_yes "gddrescue \
 	clipit \
 	cutecom \
 	graphviz \
-	synaptic"
+	synaptic \
+	d-feet"
 
 ./solarize.sh
 ./wireshark.sh

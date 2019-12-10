@@ -7,7 +7,7 @@ fi
 
 source ./common_bash_funcs.sh
 
-add_ppa ubuntuhandbook1/avidemux openshot.developers/ppa audio-recorder/ppa
+add_ppa ubuntuhandbook1/avidemux openshot.developers/ppa audio-recorder/ppa maarten-fonville/android-studio
 add_to_sources_list "http://archive.canonical.com/" "partner"
 
 echo -e "\nupdate and install main apt packages\n"
@@ -31,7 +31,8 @@ openshot-qt
 pavucontrol
 audio-recorder
 libcanberra-gtk-module
-apt-transport-tor"
+apt-transport-tor
+android-studio"
 
 which simplescreenrecorder >/dev/null 2>&1
 if [ "$?" != "0" ];

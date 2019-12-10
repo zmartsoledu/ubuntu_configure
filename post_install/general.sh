@@ -50,6 +50,8 @@ apt_group_install_auto_yes  "curl \
 
 apt_group_install_auto_yes "mkusb mkusb-nox usb-pack-efi" "--install-recommends"
 
+sudo curl -L https://yt-dl.org/latest/youtube-dl -o /usr/bin/youtube-dl && sudo chmod 755 /usr/bin/youtube-dl
+
 # disable ookla speedtest-cli as it hasn't got the release deb for some ubuntu versions 
 ## install ookla speed test cli
 # export INSTALL_KEY=379CE192D401AB61

@@ -11,8 +11,9 @@ apt_group_install_auto_yes "qemu-kvm bridge-utils libvirt-dev virtinst virt-top 
 apt_group_install_auto_yes "libvirt-bin"
 apt_group_install_auto_yes "libvirt-daemon-system libvirt-clients"
 
-sudo adduser `id -un` libvirt >/dev/null 2>&1
-sudo adduser `id -un` libvirtd >/dev/null 2>&1
+sudo adduser $SUDO_USER libvirt >/dev/null 2>&1
+sudo adduser $SUDO_USER libvirtd >/dev/null 2>&1
+sudo adduser $SUDO_USER kvm >/dev/null 2>&1
 
 sudo modprobe vhost_net
 sudo lsmod | grep vhost

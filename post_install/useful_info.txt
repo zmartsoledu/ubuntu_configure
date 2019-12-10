@@ -1,0 +1,36 @@
+#####################################
+# testing audio from cli
+#####################################
+# list playback and record devices
+aplay -l
+arecord -l
+
+# test speakers
+speaker-test -t wav -c 6 -l1
+
+# record the microphone input as an mp3 file and play it back
+arecord -d10 -f U8 test.mp3
+aplay test.mp3
+
+# or record and playback
+arecord -d10 -f U8 | tee test.mp3 | aplay -
+
+# enable/disable microphone to speaker feedback
+pactl load-module module-loopback latency_msec=1
+pactl unload-module module-loopback
+
+#####################################
+# stuff
+#####################################
+# download an mp4 from youtube and play it back on the console
+youtube-dl pec8P5K4s8c -o fireplace.mp4
+export CACA_DRIVER=ncurses && mplayer -really-quiet -vo caca fireplace.mp4
+
+#####################################
+# insall flutter
+#####################################
+Dowload the flutter plugin from https://flutter.dev/docs/get-started/install/linux
+tar xf ~/Downloads/flutter_linux_*.tar.xz -C /opt/
+echo "export PATH=\"\$PATH\":/opt/flutter/bin:" >> ~/.bashrc && bash
+yes | flutter doctor --android-licenses
+

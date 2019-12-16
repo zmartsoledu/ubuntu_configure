@@ -53,7 +53,7 @@ else
 	echo -e "skipping tor browser installation\n"
 fi
 
-snap_group_install "ghex-udt storage-explorer"
+snap_group_install "ghex-udt xournalpp storage-explorer"
 sudo snap connect storage-explorer:password-manager-service :password-manager-service
 
 snap_group_install "cool-retro-term shotcut" "--classic"

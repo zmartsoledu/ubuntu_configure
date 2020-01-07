@@ -12,6 +12,7 @@ apt_group_install_auto_yes "gddrescue \
 	gconf2 \
 	gigolo \
 	gnuplot \
+	gnome-system-monitor \
 	virtualbox-qt \
 	gparted \
 	network-manager \

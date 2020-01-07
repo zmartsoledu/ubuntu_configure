@@ -31,6 +31,14 @@ apt_group_install_auto_yes  "curl \
 	pm-utils \
 	python3 python3-pip \
 	python3-bandit \
+	vim-python-jedi \
+	exuberant-ctags \
+	ack-grep \
+	pep8 \
+	flake8 \
+	pyflakes \
+	isort \
+	yapf \
 	pv \
 	minicom microcom \
 	gnupg2 \

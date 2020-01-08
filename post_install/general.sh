@@ -69,7 +69,7 @@ sudo curl -L https://yt-dl.org/latest/youtube-dl -o /usr/bin/youtube-dl && sudo 
 # apt_update
 # apt_install_auto_yes speedtest
 
-snap_group_install "speed-test fast pdftk ffmpeg canonical-livepatch"
+snap_group_install "speed-test fast pdftk ffmpeg canonical-livepatch gobuster-csal"
 snap_install "powershell" "--classic"
 
 sudo sed -ri 's@#(DefaultTimeoutStopSec=).*@\110s@' /etc/systemd/system.conf | grep "DefaultTimeoutStopSec"

@@ -18,6 +18,17 @@ apt_group_install_auto_yes  "curl \
 	gdb-multiarch \
 	gdebi-core \
 	unetbootin \
+	nmap \
+	telnet \
+	nikto \
+	libcurl4-openssl-dev \
+	libxml2 \
+	libxml2-dev \
+	libxslt1-dev \
+	ruby-dev \
+	build-essential \
+	libgmp-dev \
+	snmp \
 	figlet \
 	pdfgrep \
 	ssh sshfs cifs-utils \
@@ -54,6 +65,7 @@ apt_group_install_auto_yes  "curl \
 	dos2unix parallel \
 	jq keychain \
 	kpartx dosfstools xxd \
+	smbclient \
 	ruby-full"
 
 apt_group_install_auto_yes "mkusb mkusb-nox usb-pack-efi" "--install-recommends"
@@ -84,6 +96,7 @@ func_print_info_message "finished cpplint"
 
 sudo -u $admin_username pip3 install jira urllib3 beautifulsoup4 lxml
 sudo -u $admin_username pip3 install pylint
+sudo -u $admin_username pip3 install pyftpdlib
 sudo ln -sf /home/$admin_username/.local/bin/pylint /usr/bin/pylint
 func_print_info_message "finished pylint"
 

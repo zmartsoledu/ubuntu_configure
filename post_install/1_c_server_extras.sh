@@ -23,7 +23,7 @@ echo "sudo update-grub" >> run_manually.sh
 ./vagrant.sh
 ./libvirt_kvm.sh
 ./vagrant_plugins.sh
-./katoolin.sh
+#./katoolin.sh
 ./disk_man.sh
 
 echo "removing i386 packages, please wait..."

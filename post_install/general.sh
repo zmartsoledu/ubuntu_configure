@@ -19,6 +19,7 @@ apt_group_install_auto_yes  "curl \
 	gdebi-core \
 	unetbootin \
 	nmap \
+	netdiscover \
 	telnet \
 	nikto \
 	libcurl4-openssl-dev \
@@ -29,6 +30,7 @@ apt_group_install_auto_yes  "curl \
 	build-essential \
 	libgmp-dev \
 	snmp \
+	medusa \
 	figlet \
 	pdfgrep \
 	ssh sshfs cifs-utils \
@@ -39,6 +41,7 @@ apt_group_install_auto_yes  "curl \
 	clang \
 	ansible \
 	default-jdk default-jre \
+	maven \
 	pm-utils \
 	python3 python3-pip \
 	python3-bandit \

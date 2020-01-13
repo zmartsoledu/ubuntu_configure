@@ -7,7 +7,7 @@ fi
 
 source ./common_bash_funcs.sh
 
-add_ppa gezakovacs/ppa ansible/ansible mkusb/ppa
+add_ppa gezakovacs/ppa ansible/ansible mkusb/ppa alessandro-strada/ppa
 
 apt_upgrade
 apt_group_install_auto_yes  "curl \
@@ -69,6 +69,7 @@ apt_group_install_auto_yes  "curl \
 	jq keychain \
 	kpartx dosfstools xxd \
 	smbclient \
+	google-drive-ocamlfuse \
 	ruby-full"
 
 apt_group_install_auto_yes "mkusb mkusb-nox usb-pack-efi" "--install-recommends"

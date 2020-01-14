@@ -19,6 +19,7 @@ apt_group_install_auto_yes  "curl \
 	gdebi-core \
 	unetbootin \
 	nmap \
+	hashcat \
 	netdiscover \
 	telnet \
 	nikto \
@@ -84,7 +85,7 @@ sudo curl -L https://yt-dl.org/latest/youtube-dl -o /usr/bin/youtube-dl && sudo 
 # apt_update
 # apt_install_auto_yes speedtest
 
-snap_group_install "speed-test fast pdftk ffmpeg canonical-livepatch gobuster-csal"
+snap_group_install "speed-test fast pdftk ffmpeg canonical-livepatch gobuster-csal pick-colour-picker"
 snap_install "powershell" "--classic"
 
 sudo sed -ri 's@#(DefaultTimeoutStopSec=).*@\110s@' /etc/systemd/system.conf | grep "DefaultTimeoutStopSec"

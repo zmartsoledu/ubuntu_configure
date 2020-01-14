@@ -19,6 +19,8 @@ apt_group_install_auto_yes  "curl \
 	gdebi-core \
 	unetbootin \
 	nmap \
+	whois \
+	irpas \
 	hashcat \
 	netdiscover \
 	telnet \

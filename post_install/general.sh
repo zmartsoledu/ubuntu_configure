@@ -9,6 +9,9 @@ source ./common_bash_funcs.sh
 
 add_ppa gezakovacs/ppa ansible/ansible mkusb/ppa alessandro-strada/ppa
 
+# snap version of nmap has some issues, so, remove it first
+sudo snap remove nmap 2>/dev/null
+
 apt_upgrade
 apt_group_install_auto_yes  "curl \
 	lsb-core tree \
@@ -23,6 +26,8 @@ apt_group_install_auto_yes  "curl \
 	irpas \
 	hashcat \
 	netdiscover \
+	arp-scan \
+	arping \
 	telnet \
 	nikto \
 	libcurl4-openssl-dev \

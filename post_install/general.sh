@@ -21,6 +21,7 @@ apt_group_install_auto_yes  "curl \
 	gdb-multiarch \
 	gdebi-core \
 	unetbootin \
+	flex \
 	nmap \
 	whois \
 	irpas \

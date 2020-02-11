@@ -56,6 +56,7 @@ apt_group_install_auto_yes  "curl \
 	vim-python-jedi \
 	exuberant-ctags \
 	ack-grep \
+	ncftp \
 	pep8 \
 	flake8 \
 	pyflakes \

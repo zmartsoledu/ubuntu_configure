@@ -22,6 +22,8 @@ apt_group_install_auto_yes  "curl \
 	gdebi-core \
 	unetbootin \
 	flex \
+	blktrace \
+	golang-go \
 	nmap \
 	whois \
 	irpas \

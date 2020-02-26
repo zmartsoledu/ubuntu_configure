@@ -27,6 +27,8 @@ apt_group_install_auto_yes  "curl \
 	nmap \
 	whois \
 	irpas \
+	netcat \
+	socat \
 	hashcat \
 	netdiscover \
 	arp-scan \

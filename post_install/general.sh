@@ -23,6 +23,8 @@ apt_group_install_auto_yes  "curl \
 	unetbootin \
 	flex \
 	blktrace \
+	iotop \
+	htop \
 	golang-go \
 	nmap \
 	whois \

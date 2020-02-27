@@ -18,6 +18,7 @@ apt_group_install_auto_yes "gddrescue \
 	network-manager \
 	gitk tortoisehg \
 	debconf-utils \
+	blktrace \
 	meld \
 	vim-gnome \
 	galculator \

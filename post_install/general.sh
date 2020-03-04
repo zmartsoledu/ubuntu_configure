@@ -28,6 +28,7 @@ apt_group_install_auto_yes  "curl \
 	nmap \
 	whois \
 	irpas \
+	sysstat \
 	netcat \
 	socat \
 	hashcat \

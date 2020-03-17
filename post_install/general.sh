@@ -24,6 +24,9 @@ apt_group_install_auto_yes  "curl \
 	flex \
 	iotop \
 	htop \
+	sysstat \
+	ftp \
+	iperf \
 	golang-go \
 	nmap \
 	whois \

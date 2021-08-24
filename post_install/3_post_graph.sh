@@ -15,7 +15,7 @@ apt_group_install_auto_yes "gddrescue \
 	virtualbox-qt \
 	gparted \
 	network-manager \
-	gitk tortoisehg \
+	gitk \
 	debconf-utils \
 	meld \
 	vim-gnome \
@@ -23,7 +23,14 @@ apt_group_install_auto_yes "gddrescue \
 	clipit \
 	cutecom \
 	graphviz \
-	synaptic"
+	synaptic \
+	openconnect \
+	network-manager-openconnect \
+	network-manager-openconnect-gnome \
+	qt5-default \
+	qtcreator"
+
+snap_group_install "multipass"
 
 ./solarize.sh
 ./wireshark.sh

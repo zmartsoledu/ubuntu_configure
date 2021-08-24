@@ -24,6 +24,8 @@ apt_group_install_auto_yes  "curl \
 	apt-transport-https dirmngr \
 	openvpn resolvconf \
 	git mercurial \
+	subversion \
+	git-svn \
 	doxygen \
 	clang \
 	ansible \

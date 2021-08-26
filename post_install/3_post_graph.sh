@@ -28,7 +28,8 @@ apt_group_install_auto_yes "gddrescue \
 	network-manager-openconnect \
 	network-manager-openconnect-gnome \
 	qt5-default \
-	qtcreator"
+	qtcreator \
+	pidgin"
 
 snap_group_install "multipass"
 

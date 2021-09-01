@@ -68,7 +68,7 @@ func_print_info_message "script end `basename "$0"`"
 if [ "${mod_requires_reboot}" == "1" ]; then
 	echo "rebooting due to username/psswd mods..."
 	sleep 3
-	sudo sync && sudo reboot
+	custom_reboot
 fi
 
 exit 0

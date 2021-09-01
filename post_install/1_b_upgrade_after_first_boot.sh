@@ -22,6 +22,6 @@ func_print_info_message "script end `basename "$0"`"
 
 echo "rebooting due to apt-get upgrade"
 sleep 3
-sudo sync && sudo reboot
+custom_reboot
 
 exit 0

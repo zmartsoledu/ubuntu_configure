@@ -187,3 +187,9 @@ function apt_upgrade() {
     func_print_ok_fail_on_ret_code "$?" "apt_upgrade"
 }
 
+function custom_reboot() {
+    # comment out the line below to stop reboots, for testing
+    sudo sync && sudo reboot $1
+    echo ""
+}
+

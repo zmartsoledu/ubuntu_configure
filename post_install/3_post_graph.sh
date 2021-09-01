@@ -29,7 +29,9 @@ apt_group_install_auto_yes "gddrescue \
 	network-manager-openconnect-gnome \
 	qt5-default \
 	qtcreator \
-	pidgin"
+	pidgin \
+	sqlite3 \
+	sqlitebrowser"
 
 snap_group_install "multipass"
 

@@ -21,6 +21,6 @@ func_print_info_message "script end `basename "$0"`"
 echo "pre-graph steps are completed. restarting your pc and then you can continue with the post-graph setup"
 sleep 3
 # let's enforce a reboot until the nvidia graphics driver console log spamming issue is resolved
-sync && reboot -f
+custom_reboot -f
 
 exit 0

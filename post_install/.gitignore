@@ -1,3 +1,4 @@
 run_manually.sh
 *.log
 katoolin
+Anaconda*.sh

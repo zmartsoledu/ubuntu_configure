@@ -48,6 +48,7 @@ apt_group_install_auto_yes  "curl \
 	dos2unix parallel \
 	jq keychain \
 	kpartx dosfstools xxd \
+	nmap \
 	ruby-full"
 
 apt_group_install_auto_yes "mkusb mkusb-nox usb-pack-efi" "--install-recommends"

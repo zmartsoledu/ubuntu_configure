@@ -5,15 +5,16 @@ function func_print_help() {
   usage:
 	--iso: original iso img path
 	--usb: usb device to install to, ie /dev/sdc. if omitted, only local iso is created.
-	--ncl: no cleanup, which means do not delete the modified copy of the iso contents
+	--ncl: no cleanup, which means do not delete the modified copy of the iso contents,
+	   this can be helpful for debugging
 	
 
 	if you are unsure;
 	
-	- ubuntu images can be downloaded from http://cdimage.ubuntu.com/releases or http://releases.ubuntu.com/, 
-	  and it is recommended that you pick a non-live server image ie:
-	wget http://cdimage.ubuntu.com/releases/18.04.2/release/ubuntu-18.04.2-server-amd64.iso
-	wget http://releases.ubuntu.com/18.04/ubuntu-18.04.2-desktop-amd64.iso
+	- ubuntu images can be downloaded from http://releases.ubuntu.com/ or 
+	  http://old-releases.ubuntu.com/releases/20.04.0/, 
+	  and it is recommended that you pick a live server (not desktop) image ie:
+	wget http://releases.ubuntu.com/20.04/ubuntu-20.04.3-live-server-amd64.iso
 
 	- available usb drives, without the /dev/ prefix, can be listed by:
 	lsblk -do name,tran | grep \"usb\" | grep -E \"^sd\" | cut -d\" \" -f1

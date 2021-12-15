@@ -33,6 +33,7 @@ apt_group_install_auto_yes  "curl \
 	pm-utils \
 	python3 python3-pip \
 	python3-bandit \
+	ipython3 \
 	pv \
 	minicom microcom \
 	gnupg2 \

@@ -30,6 +30,7 @@ apt_group_install_auto_yes "gddrescue \
 	qt5-default \
 	qtcreator \
 	pidgin \
+	openjdk-11-jdk \
 	sqlite3 \
 	sqlitebrowser"
 

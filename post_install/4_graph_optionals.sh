@@ -56,7 +56,9 @@ if [ "$?" != "0" ]; then
 fi
 
 func_install_latest_deb_from_github "keeweb/keeweb"
-func_install_latest_deb_from_github "meetfranz/franz"
+#func_install_latest_deb_from_github "meetfranz/franz"
+
+snap_group_install "discord slack telegram-desktop teams"
 
 SCRIPT_LOC=`pwd`
 cd /home/$SUDO_USER

@@ -43,6 +43,7 @@ snap_group_install "multipass"
 ./skype.sh
 ./sensors.sh
 ./mic_noise_cancelling.sh
+./nm_dns.sh
 
 opt_selection="";
 while [ "$opt_selection" != "y" ] && [ "$opt_selection" != "n" ]; do

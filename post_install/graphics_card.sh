@@ -31,7 +31,11 @@ if `echo $graphics_card_vendor_and_model | grep "nvidia" > /dev/null 2>&1`; then
 
 	apt-get purge -y nvidia*
 
-	latest_nvidia_pkg=`apt-cache search nvidia- | grep -E "^nvidia-driver-[0-9]{3,4} " | cut -d" " -f1 | sort -V | uniq | tail -n1`
+	latest_nvidia_pkg=`apt-cache search nvidia- | grep -E "^nvidia-driver-[0-9]{3,5}-server " | cut -d" " -f1 | sort -V | uniq | tail -n1`
+
+	if [ -z "$latest_nvidia_pkg" ]; then
+		latest_nvidia_pkg=`apt-cache search nvidia- | grep -E "^nvidia-driver-[0-9]{3,5} " | cut -d" " -f1 | sort -V | uniq | tail -n1`
+	fi
 
 	if [ -z "$latest_nvidia_pkg" ]; then
 		echo "falling back to ubuntu-driver to identify the latest driver, please wait..."

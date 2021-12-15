@@ -6,7 +6,7 @@ if [ `id -u` != "0" ]; then
 fi
 
 grep 'dns=default' /etc/NetworkManager/NetworkManager.conf >/dev/null 2>&1
-if [ $? -ne 0 ];
+if [ $? -ne 0 ]; then
 	sed -i '/\[main\]/a dns=default' /etc/NetworkManager/NetworkManager.conf
 fi
 

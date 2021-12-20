@@ -45,6 +45,7 @@ apt_group_install_auto_yes  "curl \
 	qemu qemu-kvm ovmf \
 	traceroute \
 	net-tools \
+	nvme-cli \
 	node.js npm \
 	libnl-3-dev libnl-genl-3-dev libnl-nf-3-dev libnl-route-3-dev \
 	dos2unix parallel \

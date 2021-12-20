@@ -39,7 +39,7 @@ snap_group_install "multipass"
 ./solarize.sh
 ./wireshark.sh
 ./anaconda.sh
-./arduino.sh
+#./arduino.sh
 ./visual_studio_code.sh
 ./skype.sh
 ./sensors.sh

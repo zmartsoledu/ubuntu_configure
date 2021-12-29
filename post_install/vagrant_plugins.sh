@@ -9,6 +9,7 @@ source ./common_bash_funcs.sh
 
 echo "installing vagrant plugins..."
 sudo vagrant plugin install vagrant-libvirt
+sudo vagrant plugin install vagrant-vbguest
 sudo vagrant plugin install vagrant-disksize
 sudo vagrant plugin install vagrant-azure
 

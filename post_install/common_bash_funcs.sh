@@ -136,6 +136,29 @@ function add_to_sources_list() {
     fi
 }
 
+function apt_add() {
+    local __repo_base_link="$1"
+    local __version_name=`lsb_release -sc`
+    local __arch=`dpkg --print-architecture`
+    local __repo_link="deb [arch=$__arch] $__repo_base_link $__version_name main"
+    
+    grep -Fh "$__repo_link" /etc/apt/sources.list > /dev/null 2>&1
+    if [ "$?" != "0" ]
+    then
+        curl -fsSL ${__repo_base_link}/gpg > vagrant.key
+        sudo apt-key add vagrant.key >/dev/null 2>&1
+        if [ "$?" == "0" ]; then 
+            echo "Adding repo:$__repo_link"
+            sudo apt-add-repository -y "$__repo_link"
+            func_print_ok_message "repo add: $__repo_link"
+        else
+            func_print_fail_message "repo add: $__repo_link"
+        fi      
+    else
+      func_print_info_message "repo already exists: $__repo_link"
+    fi
+}
+
 function apt_group_install_auto_yes() {
     local __package_list="$1"
     local __extra_apt_opts="$2"

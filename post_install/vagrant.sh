@@ -12,13 +12,10 @@ vagrant_dir="vagrant_dl"
 
 mkdir -p $vagrant_dir && cd $vagrant_dir
 rm -rf *
-wget $vagrant_url
-host_arch=`uname -i`
-vagrant_deb=`grep "${host_arch}.deb" downloads.html | sed 's/.*="\(.*\)".*/\1/'`
-wget ${vagrant_deb}
 
-sudo dpkg -i *.deb
-sudo apt-get install -f
+apt_add "https://apt.releases.hashicorp.com"
+
+apt_group_install_auto_yes "vagrant"
 
 vagrant --version
 

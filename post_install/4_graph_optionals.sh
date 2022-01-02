@@ -34,6 +34,7 @@ libcanberra-gtk-module
 clamav
 clamav-daemon
 clamtk
+safeeyes
 apt-transport-tor"
 
 # if you want to disable tor browser installation, change the 'true' to 'false' in the line below

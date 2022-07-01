@@ -15,6 +15,7 @@ source ./common_bash_funcs.sh
 wget https://www.anaconda.com/distribution -O distribution
 installer_dl_link=$(grep -o "https://.*Anaconda3.*Linux-x86_64.sh" distribution | cut -d"\"" -f1 | tail -n1)
 rm -rf distribution
+rm *Anaconda3*Linux-x86_64.sh
 wget $installer_dl_link
 installer_sh="${installer_dl_link##*/}"
 

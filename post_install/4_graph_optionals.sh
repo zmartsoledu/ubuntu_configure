@@ -12,23 +12,16 @@ add_to_sources_list "http://archive.canonical.com/" "partner"
 
 echo -e "\nupdate and install main apt packages\n"
 apt_upgrade
-apt_group_install_auto_yes "synergy
-ghex-udt
-gimp
-vlc browser-plugin-vlc
+apt_group_install_auto_yes "gimp
+ghex
+vlc
 simplescreenrecorder
 libdvdnav4
-libdvdread4
 gstreamer1.0-plugins-bad
 gstreamer1.0-plugins-ugly
 libdvd-pkg
 ubuntu-restricted-extras
-adobe-flashplugin
-browser-plugin-freshplayer-pepperflash
 network-manager-openconnect-gnome
-avidemux2.7-qt5
-avidemux2.7-plugins-qt5
-openshot-qt
 pavucontrol
 audio-recorder
 libcanberra-gtk-module
@@ -39,7 +32,7 @@ safeeyes
 apt-transport-tor"
 
 # if you want to disable tor browser installation, change the 'true' to 'false' in the line below
-if true; then
+if false; then
 	add_ppa micahflee/ppa
 	sudo apt update
 	# deb.torproject.org-keyring

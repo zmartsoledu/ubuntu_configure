@@ -7,31 +7,46 @@ fi
 
 source ./common_bash_funcs.sh
 
+
+netplan_used=0
+which netplan > /dev/null
+if [ $? -eq 0 ]; then
+	netplan_used=1
+	grep 'NetworkManager' /etc/netplan/00-installer-config.yaml > /dev/null
+	if [ $? -eq 1 ]; then
+		echo "  renderer=NetworkManager" >> /etc/netplan/00-installer-config.yaml
+	fi
+fi
+
 apt_update
 apt_group_install_auto_yes "gddrescue \
 	gconf2 \
 	gigolo \
 	gnuplot \
 	gparted \
-	network-manager \
 	gitk \
 	debconf-utils \
 	meld \
 	vim-gnome \
 	galculator \
-	clipit \
+	diodon \
 	cutecom \
 	graphviz \
 	synaptic \
-	openconnect \
-	network-manager-openconnect \
-	network-manager-openconnect-gnome \
-	qt5-default \
+	cmake \
+	qtbase5-dev \
+	qtchooser \
+	qt5-qmake \
+	qtbase5-dev-tools \
 	qtcreator \
 	pidgin \
 	openjdk-11-jdk \
 	sqlite3 \
-	sqlitebrowser"
+	sqlitebrowser \
+	openconnect \
+	network-manager \	
+	network-manager-openconnect \
+	network-manager-openconnect-gnome"
 
 snap_group_install "multipass"
 
@@ -47,12 +62,18 @@ snap_group_install "multipass"
 
 opt_selection="";
 while [ "$opt_selection" != "y" ] && [ "$opt_selection" != "n" ]; do
-	read -t 10 -p "Do you want to proceed to installing optional packages [Y/n]: " opt_selection;
+	read -t 10 -p "Do you want to proceed to installing optional packages [y/N]: " opt_selection;
 	opt_selection=${opt_selection,,};
 	if [ -z "$opt_selection" ]; then
 		opt_selection="y"
 	fi
 done
+
+if [ $netplan_used -eq 1 ]; then
+	netplan apply
+	rm -rf /etc/resolv.conf
+	ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
+fi
 
 func_print_info_message "script end `basename "$0"`"
 

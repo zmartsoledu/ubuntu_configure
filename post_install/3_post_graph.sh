@@ -27,7 +27,6 @@ apt_group_install_auto_yes "gddrescue \
 	gitk \
 	debconf-utils \
 	meld \
-	vim-gnome \
 	galculator \
 	diodon \
 	cutecom \
@@ -44,7 +43,7 @@ apt_group_install_auto_yes "gddrescue \
 	sqlite3 \
 	sqlitebrowser \
 	openconnect \
-	network-manager \	
+	network-manager \
 	network-manager-openconnect \
 	network-manager-openconnect-gnome"
 

@@ -9,11 +9,7 @@ The post-install configuration steps are broken down to functional layers. So, y
 
 **Currently tested target environments**
 
-*Ubuntu 18.04 LTS*
-
-*Ubuntu 19.04*
-
-*Ubuntu 16.04 LTS (Tested only on BIOS, not tested of UEFI)*
+*Ubuntu 22.04 LTS*
 
 For more information, please refer to [this wiki link](https://github.com/zmartsoledu/ubuntu_configure/wiki).
 

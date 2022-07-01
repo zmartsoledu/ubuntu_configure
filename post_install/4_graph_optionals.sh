@@ -7,7 +7,7 @@ fi
 
 source ./common_bash_funcs.sh
 
-add_ppa ubuntuhandbook1/avidemux openshot.developers/ppa audio-recorder/ppa
+#add_ppa ubuntuhandbook1/avidemux openshot.developers/ppa audio-recorder/ppa
 add_to_sources_list "http://archive.canonical.com/" "partner"
 
 echo -e "\nupdate and install main apt packages\n"

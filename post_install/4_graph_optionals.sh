@@ -13,6 +13,7 @@ add_to_sources_list "http://archive.canonical.com/" "partner"
 echo -e "\nupdate and install main apt packages\n"
 apt_upgrade
 apt_group_install_auto_yes "synergy
+ghex-udt
 gimp
 vlc browser-plugin-vlc
 simplescreenrecorder
@@ -49,7 +50,7 @@ else
 	echo -e "skipping tor browser installation\n"
 fi
 
-snap_group_install "ghex-udt storage-explorer"
+snap_group_install "storage-explorer"
 sudo snap connect storage-explorer:password-manager-service :password-manager-service
 
 snap_group_install "cool-retro-term shotcut" "--classic"
@@ -59,7 +60,7 @@ if [ "$?" != "0" ]; then
 	apt_install_auto_yes shotcut
 fi
 
-func_install_latest_deb_from_github "keeweb/keeweb"
+#func_install_latest_deb_from_github "keeweb/keeweb"
 #func_install_latest_deb_from_github "meetfranz/franz"
 
 snap_group_install "discord slack telegram-desktop teams"

@@ -12,7 +12,6 @@ apt_group_install_auto_yes "gddrescue \
 	gconf2 \
 	gigolo \
 	gnuplot \
-	virtualbox-qt \
 	gparted \
 	network-manager \
 	gitk \
@@ -41,7 +40,7 @@ snap_group_install "multipass"
 ./anaconda.sh
 #./arduino.sh
 ./visual_studio_code.sh
-./skype.sh
+#./skype.sh
 ./sensors.sh
 ./mic_noise_cancelling.sh
 ./nm_dns.sh

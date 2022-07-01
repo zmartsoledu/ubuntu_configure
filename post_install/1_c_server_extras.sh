@@ -18,6 +18,7 @@ echo "sudo update-grub" >> run_manually.sh
 ./check_sshd_status.sh
 ./general.sh
 ./docker.sh
+./azure.sh
 ./groups.sh
 ./virtualbox.sh
 ./vagrant.sh

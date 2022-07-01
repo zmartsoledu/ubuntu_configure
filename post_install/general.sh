@@ -39,6 +39,12 @@ apt_group_install_auto_yes  "curl \
 	gnupg2 \
 	zlib1g-dev \
 	genisoimage \
+	apt-transport-https \
+	ca-certificates \
+	curl \
+	gnupg-agent \
+	software-properties-common \
+	lsb-release \
 	isolinux \
 	parted util-linux e2fsprogs \
 	xorriso dumpet squashfs-tools \

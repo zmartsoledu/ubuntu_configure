@@ -7,7 +7,7 @@ fi
 
 source ./common_bash_funcs.sh
 
-add_ppa gezakovacs/ppa ansible/ansible mkusb/ppa
+#add_ppa gezakovacs/ppa ansible/ansible mkusb/ppa
 
 apt_upgrade
 apt_group_install_auto_yes  "curl \

@@ -14,7 +14,8 @@ if [ $? -eq 0 ]; then
 	netplan_used=1
 	grep 'NetworkManager' /etc/netplan/00-installer-config.yaml > /dev/null
 	if [ $? -eq 1 ]; then
-		echo "  renderer=NetworkManager" >> /etc/netplan/00-installer-config.yaml
+		echo "  renderer: NetworkManager" >> /etc/netplan/00-installer-config.yaml
+		# also add optional: true to each network interface
 	fi
 fi
 
@@ -33,6 +34,7 @@ apt_group_install_auto_yes "gddrescue \
 	graphviz \
 	synaptic \
 	cmake \
+	cmake-format \
 	qtbase5-dev \
 	qtchooser \
 	qt5-qmake \

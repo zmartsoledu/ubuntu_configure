@@ -21,13 +21,17 @@ apt_group_install_auto_yes  "curl \
 	figlet \
 	pdfgrep \
 	ssh sshfs cifs-utils \
+	xz-utils \
 	apt-transport-https dirmngr \
 	openvpn resolvconf \
 	git mercurial \
 	subversion \
 	git-svn \
 	doxygen \
+	build-essential \
+	ccache \
 	clang \
+	clang-format \
 	ansible \
 	default-jdk default-jre \
 	pm-utils \
@@ -52,7 +56,7 @@ apt_group_install_auto_yes  "curl \
 	traceroute \
 	net-tools \
 	nvme-cli \
-	node.js npm \
+	nodejs npm \
 	libnl-3-dev libnl-genl-3-dev libnl-nf-3-dev libnl-route-3-dev \
 	dos2unix parallel \
 	jq keychain \
@@ -71,7 +75,7 @@ apt_group_install_auto_yes "mkusb mkusb-nox usb-pack-efi" "--install-recommends"
 # apt_update
 # apt_install_auto_yes speedtest
 
-snap_group_install "speed-test fast pdftk ffmpeg canonical-livepatch"
+snap_group_install "speed-test fast pdftk ffmpeg canonical-livepatch teams-for-linux"
 snap_install "powershell" "--classic"
 
 sudo sed -ri 's@#(DefaultTimeoutStopSec=).*@\110s@' /etc/systemd/system.conf | grep "DefaultTimeoutStopSec"

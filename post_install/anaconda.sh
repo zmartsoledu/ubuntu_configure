@@ -2,8 +2,9 @@
 
 INSTALL_DIR=$1
 if [ -z "$INSTALL_DIR" ]; then
-	INSTALL_DIR="$HOME/Anaconda"
+	INSTALL_DIR=$( getent passwd $SUDO_USER | cut -d: -f6 )"/Anaconda"
 fi
+echo "$INSTALL_DIR"
 
 if [ `id -u` != "0" ]; then
 	echo "EXIT[ERR]: need to run as root, exiting"
@@ -24,12 +25,12 @@ if [ -f $installer_sh ]; then
 	chmod 755 $installer_sh
 	sha256sum $installer_sh
 	which conda > /dev/null 2>&1
-	if [ "$?" != '0' ]; then
+	if [ "$?" == '0' ]; then
 		echo "detected previous installation of conda, updating"
 		update_flag="-u -f"
 	else
 		echo "installing conda fresh to $INSTALL_DIR"
-		mkdir -p $INSTALL_DIR
+		#mkdir -p $INSTALL_DIR
 	fi
 	
 	sudo -u $SUDO_USER sh -c "sh $installer_sh -b -p ${INSTALL_DIR} ${update_flag}"
@@ -40,7 +41,7 @@ if [ -f $installer_sh ]; then
 	echo "added required lines to run_manually_sh"
 	sudo chown $SUDO_USER run_manually.sh
 	chmod 755 run_manually.sh
-	rm $installer_sh
+	#rm $installer_sh
 	exit_code="0"
 else
 	func_print_fail_message "$installer_sh not found"

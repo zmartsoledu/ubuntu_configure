@@ -8,8 +8,8 @@ fi
 source ./common_bash_funcs.sh
 
 apt_group_install_auto_yes "qemu-kvm bridge-utils libvirt-dev virtinst virt-top libguestfs-tools libosinfo-bin"
-apt_group_install_auto_yes "libvirt-bin"
 apt_group_install_auto_yes "libvirt-daemon-system libvirt-clients"
+apt_group_install_auto_yes "bridge-utils"
 
 sudo adduser `id -un` libvirt >/dev/null 2>&1
 sudo adduser `id -un` libvirtd >/dev/null 2>&1

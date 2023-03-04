@@ -13,6 +13,7 @@ add_to_sources_list "http://archive.canonical.com/" "partner"
 echo -e "\nupdate and install main apt packages\n"
 apt_upgrade
 apt_group_install_auto_yes "gimp
+firefox
 ghex
 vlc
 simplescreenrecorder

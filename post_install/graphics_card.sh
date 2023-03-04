@@ -52,6 +52,8 @@ if `echo $graphics_card_vendor_and_model | grep "nvidia" > /dev/null 2>&1`; then
 
 	echo "installed nvidia system info: "
 	nvidia-smi
+	apt_group_install_auto_yes "nvidia-settings"
+
 elif `echo $graphics_card_vendor_and_model | grep "amd" > /dev/null 2>&1`; then
 	echo "identified graphics card: amd, going ahead with the installation"
 

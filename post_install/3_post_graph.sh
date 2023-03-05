@@ -61,6 +61,13 @@ snap_group_install "multipass"
 ./mic_noise_cancelling.sh
 ./nm_dns.sh
 
+if [ $netplan_used -eq 1 ]; then
+	rm -rf /etc/resolv.conf
+	ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
+	netplan apply
+	systemctl restart NetworkManager	
+fi
+
 opt_selection="";
 while [ "$opt_selection" != "y" ] && [ "$opt_selection" != "n" ]; do
 	read -t 10 -p "Do you want to proceed to installing optional packages [y/N]: " opt_selection;
@@ -69,12 +76,6 @@ while [ "$opt_selection" != "y" ] && [ "$opt_selection" != "n" ]; do
 		opt_selection="y"
 	fi
 done
-
-if [ $netplan_used -eq 1 ]; then
-	netplan apply
-	rm -rf /etc/resolv.conf
-	ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
-fi
 
 func_print_info_message "script end `basename "$0"`"
 

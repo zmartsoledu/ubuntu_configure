@@ -37,7 +37,7 @@ else
 fi
 
 sudo groupadd docker
-sudo usermod -aG docker `getent group sudo | awk -F: '{print $4}'`
+sudo gpasswd -M `getent group sudo | awk -F: '{print $4}'` docker
 sudo systemctl start docker
 sudo systemctl status docker --no-pager
 

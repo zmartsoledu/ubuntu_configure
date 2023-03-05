@@ -38,6 +38,7 @@ if [ -f $installer_sh ]; then
 	echo "export PATH=\$PATH:${INSTALL_DIR}/condabin" >> run_manually.sh
 	echo "conda init" >> run_manually.sh
 	echo "conda install -y anaconda-clean" >> run_manually.sh
+	echo "conda update --all -y" >> run_manually.sh
 	echo "added required lines to run_manually_sh"
 	sudo chown $SUDO_USER run_manually.sh
 	chmod 755 run_manually.sh

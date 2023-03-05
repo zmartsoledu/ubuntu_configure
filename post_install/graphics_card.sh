@@ -39,7 +39,7 @@ if `echo $graphics_card_vendor_and_model | grep "nvidia" > /dev/null 2>&1`; then
 
 	if [ -z "$latest_nvidia_pkg" ]; then
 		echo "falling back to ubuntu-driver to identify the latest driver, please wait..."
-		latest_nvidia_pkg=`ubuntu-driver devices | grep "non-free" | grep -Eo "nvidia-driver-[0-9]{3,4}" | sort -V | uniq | tail -n1`
+		latest_nvidia_pkg=`ubuntu-drivers devices | grep "non-free" | grep -Eo "nvidia-driver-[0-9]{3,4}" | sort -V | uniq | tail -n1`
 	fi
 	echo "attempting to install: $latest_nvidia_pkg"
 

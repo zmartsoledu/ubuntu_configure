@@ -9,9 +9,9 @@ source ./common_bash_funcs.sh
 
 apt_update
 
-if [[ 1 == 0 ]]; then
+if [[ 1 == 1 ]]; then
 	echo "attempting to remove old docker packages"
-	sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y --purge docker docker-ce docker-ce-cli docker-engine docker-compose docker.io containerd runc >/dev/null 2>&1
+	sudo DEBIAN_FRONTEND=noninteractive apt-get remove -y --purge docker* runc >/dev/null 2>&1
 	sudo rm -rf /etc/apt/sources.list.d/docker*
 fi
 

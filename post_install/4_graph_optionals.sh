@@ -57,7 +57,7 @@ fi
 #func_install_latest_deb_from_github "keeweb/keeweb"
 #func_install_latest_deb_from_github "meetfranz/franz"
 
-snap_group_install "discord slack telegram-desktop teams"
+snap_group_install "discord slack telegram-desktop teams-for-linux"
 
 SCRIPT_LOC=`pwd`
 cd /home/$SUDO_USER

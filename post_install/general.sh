@@ -75,7 +75,7 @@ apt_group_install_auto_yes "mkusb mkusb-nox usb-pack-efi" "--install-recommends"
 # apt_update
 # apt_install_auto_yes speedtest
 
-snap_group_install "speed-test fast pdftk ffmpeg canonical-livepatch teams-for-linux"
+snap_group_install "speed-test fast pdftk ffmpeg canonical-livepatch"
 snap_install "powershell" "--classic"
 
 sudo sed -ri 's@#(DefaultTimeoutStopSec=).*@\110s@' /etc/systemd/system.conf | grep "DefaultTimeoutStopSec"

@@ -17,7 +17,6 @@ apt_group_install_auto_yes  "curl \
 	linux-headers-generic \
 	gdb-multiarch \
 	gdebi-core \
-	unetbootin \
 	figlet \
 	pdfgrep \
 	ssh sshfs cifs-utils \
@@ -62,6 +61,22 @@ apt_group_install_auto_yes  "curl \
 	jq keychain \
 	kpartx dosfstools xxd \
 	nmap \
+	gawk \
+	diffstat \
+	unzip \
+	texinfo \
+	chrpath \
+	gcc-multilib \
+	socat \
+	cpio \
+	python3-pexpect \
+	xz-utils \
+	debianutils \
+	iputils-ping \
+	python3-git \
+	python3-jinja2 \
+	libegl1-mesa \
+	libsdl1.2-dev \
 	ruby-full"
 
 apt_group_install_auto_yes "mkusb mkusb-nox usb-pack-efi" "--install-recommends"

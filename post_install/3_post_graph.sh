@@ -50,6 +50,7 @@ apt_group_install_auto_yes "gddrescue \
 	network-manager-openconnect-gnome"
 
 snap_group_install "multipass"
+snap_group_install "eclipse" "--classic"
 
 ./solarize.sh
 ./wireshark.sh
@@ -61,11 +62,26 @@ snap_group_install "multipass"
 ./mic_noise_cancelling.sh
 ./nm_dns.sh
 
+if ! grep -q "$(hostname)" /etc/hosts; then
+    sudo sed -i "1i\127.0.0.1 $(hostname)" /etc/hosts
+fi
+
 if [ $netplan_used -eq 1 ]; then
 	rm -rf /etc/resolv.conf
+	mkdir -p /run/resolvconf/
+	touch /run/resolvconf/resolv.conf
+	
+	# temporary addition until the system sorts itself out
+	echo "nameserver 8.8.8.8" > /run/resolvconf/resolv.conf
 	ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
 	netplan apply
-	systemctl restart NetworkManager	
+	systemctl restart NetworkManager
+	
+	apt_group_install_auto_yes "resolvconf"
+	sudo sed -i 's/#FallbackDNS=.*/FallbackDNS=8.8.8.8 8.8.4.4/' /etc/systemd/resolved.conf
+	
+	netplan apply
+	systemctl restart NetworkManager
 fi
 
 opt_selection="";

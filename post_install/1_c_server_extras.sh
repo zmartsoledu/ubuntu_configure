@@ -10,6 +10,22 @@ source ./common_bash_funcs.sh
 # point /bin/sh to bash
 ln -sf /bin/bash /bin/sh
 
+# add some aliases
+if [ ! -s ~/.bash_aliases ]; then
+cat <<EOT >> ~/.bash_aliases
+function cfind() {
+    job_count=$((\`grep -c ^processor /proc/cpuinfo\`-2))
+    find . -type f -name "\${1}" -print0 | xargs -0 -n1 -P\${job_count} grep "\${2}" -Hn"\${3}"
+}
+
+# docker aliases
+# bitnami/git provides a more recent version but the size is ~600MB as opposed to ~30MB
+alias d-git="docker run -ti --rm -v \${HOME}:/root -v \$(pwd):/git alpine/git:latest"
+alias i="ip -c -brie a"
+alias tpr="tput reset"
+EOT
+fi
+
 echo '#!/bin/bash' > run_manually.sh
 echo "sudo sed -ri 's@^#WaylandEnable@WaylandEnable@' /etc/gdm3/custom.conf > /dev/null 2>&1" >> run_manually.sh
 echo "sudo sed -ri 's@\"quiet\"@\"\"@' /etc/default/grub > /dev/null 2>&1" >> run_manually.sh

@@ -77,7 +77,10 @@ apt_group_install_auto_yes  "curl \
 	python3-jinja2 \
 	libegl1-mesa \
 	libsdl1.2-dev \
+	tftp \
 	ruby-full"
+	
+mkdir /tftpboot && chmodd 777 /tftpboot && chown nobody:$SUDO_USER /tftpboot
 
 apt_group_install_auto_yes "mkusb mkusb-nox usb-pack-efi" "--install-recommends"
 
@@ -107,6 +110,8 @@ sudo -u $admin_username pip3 install jira urllib3 beautifulsoup4 lxml
 sudo -u $admin_username pip3 install pylint
 sudo ln -sf /home/$admin_username/.local/bin/pylint /usr/bin/pylint
 func_print_info_message "finished pylint"
+
+sudo -u $admin_username pip3 install json-spec
 
 # install ruby version manager
 #curl -sSL https://rvm.io/mpapis.asc | gpg2 --import -

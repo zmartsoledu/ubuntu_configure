@@ -28,6 +28,8 @@ apt_group_install_auto_yes "gddrescue \
 	gitk \
 	debconf-utils \
 	meld \
+	filezilla \
+	putty \
 	galculator \
 	diodon \
 	cutecom \
@@ -49,8 +51,13 @@ apt_group_install_auto_yes "gddrescue \
 	network-manager-openconnect \
 	network-manager-openconnect-gnome"
 
+apt_group_install_auto_yes "gcc-12"
+
 snap_group_install "multipass"
-snap_group_install "eclipse" "--classic"
+#snap_group_install "eclipse" "--classic"
+
+snap_group_install "postman"
+snap_group_install "drawio"
 
 ./solarize.sh
 ./wireshark.sh

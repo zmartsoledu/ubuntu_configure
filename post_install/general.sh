@@ -11,6 +11,8 @@ source ./common_bash_funcs.sh
 
 apt_upgrade
 apt_group_install_auto_yes  "curl \
+	vim \
+	git \
 	lsb-core tree \
 	ubuntu-drivers-common \
 	bsdmainutils \
@@ -28,6 +30,9 @@ apt_group_install_auto_yes  "curl \
 	git-svn \
 	doxygen \
 	build-essential \
+	make \
+	perl \
+	locate \
 	ccache \
 	clang \
 	clang-format \

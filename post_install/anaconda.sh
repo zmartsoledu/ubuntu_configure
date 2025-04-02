@@ -2,7 +2,7 @@
 
 INSTALL_DIR=$1
 if [ -z "$INSTALL_DIR" ]; then
-	INSTALL_DIR=$( getent passwd $SUDO_USER | cut -d: -f6 )"/Anaconda"
+	INSTALL_DIR=$( getent passwd $SUDO_USER | cut -d: -f6 )"/anaconda3"
 fi
 echo "$INSTALL_DIR"
 
@@ -13,7 +13,7 @@ fi
 
 source ./common_bash_funcs.sh
 
-wget https://www.anaconda.com/distribution -O distribution
+wget https://www.anaconda.com/download/success -O distribution
 installer_dl_link=$(grep -o "https://.*Anaconda3.*Linux-x86_64.sh" distribution | cut -d"\"" -f1 | tail -n1)
 rm -rf distribution
 rm *Anaconda3*Linux-x86_64.sh
@@ -28,6 +28,7 @@ if [ -f $installer_sh ]; then
 	if [ "$?" == '0' ]; then
 		echo "detected previous installation of conda, updating"
 		update_flag="-u -f"
+		INSTALL_DIR=$(conda info --base)
 	else
 		echo "installing conda fresh to $INSTALL_DIR"
 		#mkdir -p $INSTALL_DIR

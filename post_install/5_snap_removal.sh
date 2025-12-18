@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# Snap Removal Script for Ubuntu 24.04
+# Run AFTER all flatpak/apt alternatives are installed and verified
+
+if [ `id -u` != "0" ]; then
+	echo "EXIT[ERR]: need to run as root, exiting"
+	exit -1
+fi
+
+source ./common_bash_funcs.sh
+
+COL_GRN="\e[32m"
+COL_RED="\e[31m"
+COL_YEL="\e[33m"
+COL_DFL="\e[39m"
+
+print_warn() {
+    echo -e "${COL_YEL}[WARN]${COL_DFL} $1"
+}
+
+print_info() {
+    echo -e "${COL_GRN}[INFO]${COL_DFL} $1"
+}
+
+echo "========================================"
+echo "    Snap Removal Script"
+echo "========================================"
+echo ""
+print_warn "This will remove ALL snap packages and snapd"
+print_warn "Make sure you have alternatives installed!"
+echo ""
+
+# Check if snap is installed
+if ! which snap >/dev/null 2>&1; then
+	print_info "Snap not installed, nothing to do"
+	exit 0
+fi
+
+# List current snaps
+print_info "Current snap packages:"
+snap list | tee /root/snap_list_backup.txt
+echo ""
+
+read -p "Do you want to proceed with snap removal? [y/N]: " confirm
+if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
+	print_info "Aborting snap removal"
+	exit 0
+fi
+
+# Stop snapd services
+print_info "Stopping snapd services..."
+systemctl stop snapd.service
+systemctl stop snapd.socket
+systemctl stop snapd.seeded.service
+
+# Remove all snap packages
+print_info "Removing snap packages..."
+for snap in $(snap list | awk 'NR>1 {print $1}'); do
+	print_info "Removing snap: $snap"
+	snap remove --purge "$snap" 2>/dev/null || {
+		print_warn "Failed to remove $snap, trying again..."
+		snap remove --purge "$snap" 2>&1
+	}
+done
+
+# Remove core snaps (order matters)
+for core_snap in lxd core20 core22 core24 bare snapd; do
+	if snap list 2>/dev/null | grep "^$core_snap " >/dev/null; then
+		print_info "Removing core snap: $core_snap"
+		snap remove --purge "$core_snap" 2>/dev/null
+	fi
+done
+
+# Remove snapd package
+print_info "Removing snapd package..."
+apt purge -y snapd
+apt autoremove -y
+
+# Mark snapd as held to prevent reinstallation
+print_info "Marking snapd as held..."
+apt-mark hold snapd
+
+# Create preference file to block snapd
+cat > /etc/apt/preferences.d/no-snapd << 'EOF'
+Package: snapd
+Pin: release *
+Pin-Priority: -1
+EOF
+
+# Clean up snap directories
+print_info "Cleaning up snap directories..."
+rm -rf /snap
+rm -rf /var/snap
+rm -rf /var/lib/snapd
+rm -rf ~/snap
+rm -rf /var/cache/snapd
+
+# Remove snap from PATH in system-wide profile
+if [ -f /etc/profile.d/apps-bin-path.sh ]; then
+	rm -f /etc/profile.d/apps-bin-path.sh
+fi
+
+# Clean up any snap mount units
+print_info "Cleaning up snap mount units..."
+rm -f /etc/systemd/system/snap-*.mount
+rm -f /etc/systemd/system/multi-user.target.wants/snap-*.mount
+systemctl daemon-reload
+
+print_info "Snap removal complete!"
+echo ""
+print_info "Summary:"
+print_info "  - All snap packages removed"
+print_info "  - snapd package purged and held"
+print_info "  - Snap directories cleaned"
+print_info "  - Backup of snap list: /root/snap_list_backup.txt"
+echo ""
+print_warn "Reboot recommended to ensure all snap remnants are gone"
+
+func_print_info_message "script end `basename "$0"`"
+exit 0

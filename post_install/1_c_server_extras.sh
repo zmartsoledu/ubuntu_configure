@@ -25,11 +25,19 @@ echo "sudo update-grub" >> run_manually.sh
 ./docker.sh
 ./azure.sh
 ./groups.sh
-./virtualbox.sh
+
+# VirtualBox - check if needed for 24.04
+func_print_info_message "VirtualBox - skipped, consider alternatives (libvirt/qemu)"
+# ./virtualbox.sh
+
+# Vagrant - now using libvirt as provider instead of VirtualBox
 ./vagrant.sh
 ./libvirt_kvm.sh
-./vagrant_plugins.sh
-#./katoolin.sh
+
+# Vagrant plugins for libvirt
+func_print_info_message "Installing vagrant-libvirt plugin"
+vagrant plugin install vagrant-libvirt
+
 ./disk_man.sh
 
 echo "removing i386 packages, please wait..."

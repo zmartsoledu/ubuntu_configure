@@ -1,2 +1,0 @@
-# just for info
-http://old-releases.ubuntu.com/releases/20.04.0/

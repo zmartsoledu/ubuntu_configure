@@ -7,19 +7,34 @@ fi
 
 source ./common_bash_funcs.sh
 
-
+# Switch from netplan to NetworkManager
 netplan_used=0
 which netplan > /dev/null
 if [ $? -eq 0 ]; then
 	netplan_used=1
-	grep 'NetworkManager' /etc/netplan/00-installer-config.yaml > /dev/null
-	if [ $? -eq 1 ]; then
-		echo "  renderer: NetworkManager" >> /etc/netplan/00-installer-config.yaml
-		# also add optional: true to each network interface
+	
+	# Check if already configured for NetworkManager
+	if [ -f /etc/netplan/01-network-manager-all.yaml ]; then
+		func_print_info_message "NetworkManager already configured in netplan"
+	else
+		# Create NetworkManager netplan config
+		cat > /etc/netplan/01-network-manager-all.yaml << 'EOF'
+network:
+  version: 2
+  renderer: NetworkManager
+EOF
+		# Disable old installer config
+		if [ -f /etc/netplan/00-installer-config.yaml ]; then
+			mv /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.disabled
+		fi
+		
+		func_print_ok_message "Configured NetworkManager in netplan"
 	fi
 fi
 
 apt_update
+
+# Core development tools - NO SNAPS
 apt_group_install_auto_yes "gddrescue \
 	gconf2 \
 	gigolo \
@@ -43,7 +58,7 @@ apt_group_install_auto_yes "gddrescue \
 	qtbase5-dev-tools \
 	qtcreator \
 	pidgin \
-	openjdk-11-jdk \
+	openjdk-17-jdk \
 	sqlite3 \
 	sqlitebrowser \
 	openconnect \
@@ -51,36 +66,59 @@ apt_group_install_auto_yes "gddrescue \
 	network-manager-openconnect \
 	network-manager-openconnect-gnome"
 
-apt_group_install_auto_yes "gcc-12"
+# GCC 14 in Ubuntu 24.04
+apt_group_install_auto_yes "gcc-14 g++-14"
+update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
+update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
 
-snap_group_install "multipass"
-#snap_group_install "eclipse" "--classic"
+# Install flatpak for snap replacements
+apt_install_auto_yes "flatpak gnome-software-plugin-flatpak"
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-snap_group_install "postman"
-snap_group_install "drawio"
+# Install flatpak alternatives to snaps
+func_print_info_message "Installing flatpak applications..."
+flatpak install -y flathub com.getpostman.Postman 2>/dev/null || func_print_warn_message "Postman install failed or skipped"
+flatpak install -y flathub com.jgraph.drawio.desktop 2>/dev/null || func_print_warn_message "Draw.io install failed or skipped"
+flatpak install -y flathub com.discordapp.Discord 2>/dev/null || func_print_warn_message "Discord install failed or skipped"
+flatpak install -y flathub com.slack.Slack 2>/dev/null || func_print_warn_message "Slack install failed or skipped"
+flatpak install -y flathub org.telegram.desktop 2>/dev/null || func_print_warn_message "Telegram install failed or skipped"
+
+# Apps that are back in apt repos for 24.04
+apt_group_install_auto_yes "ffmpeg pdftk-java"
+
+# PowerShell from Microsoft repo
+if ! which pwsh >/dev/null 2>&1; then
+	func_print_info_message "Installing PowerShell from Microsoft..."
+	wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+	dpkg -i packages-microsoft-prod.deb
+	rm -f packages-microsoft-prod.deb
+	apt_update
+	apt_install_auto_yes powershell
+fi
 
 ./solarize.sh
 ./wireshark.sh
 ./anaconda.sh
-#./arduino.sh
 ./visual_studio_code.sh
-#./skype.sh
 ./sensors.sh
 ./mic_noise_cancelling.sh
 ./nm_dns.sh
 
+# Ensure hostname is in /etc/hosts
 if ! grep -q "$(hostname)" /etc/hosts; then
     sudo sed -i "1i\127.0.0.1 $(hostname)" /etc/hosts
 fi
 
+# Apply NetworkManager configuration
 if [ $netplan_used -eq 1 ]; then
 	rm -rf /etc/resolv.conf
 	mkdir -p /run/resolvconf/
 	touch /run/resolvconf/resolv.conf
 	
-	# temporary addition until the system sorts itself out
+	# Temporary DNS until NetworkManager takes over
 	echo "nameserver 8.8.8.8" > /run/resolvconf/resolv.conf
-	ln -s /run/resolvconf/resolv.conf /etc/resolv.conf
+	ln -sf /run/resolvconf/resolv.conf /etc/resolv.conf
+	
 	netplan apply
 	systemctl restart NetworkManager
 	
@@ -89,6 +127,7 @@ if [ $netplan_used -eq 1 ]; then
 	
 	netplan apply
 	systemctl restart NetworkManager
+	systemctl restart systemd-resolved
 fi
 
 opt_selection="";

@@ -1,0 +1,22 @@
+========================================
+Post-install Checklist
+========================================
+
+1. Log in as the bootstrap sudo user you configured during autoinstall.
+   Username: zmartadmin
+   Password: <the value you entered during autoinstall>
+
+2. Clone the automation repository:
+   git clone https://github.com/zmartsoledu/ubuntu_configure.git ~/ubuntu_configure
+
+3. Run the staged post-install scripts:
+   cd ~/ubuntu_configure/post_install
+   sudo ./1_a_user_psswd_mods.sh
+   # Continue with the remaining scripts as documented in post_install/README.md
+
+4. Keep the repository up to date:
+   cd ~/ubuntu_configure
+   git pull
+
+Happy building!
+

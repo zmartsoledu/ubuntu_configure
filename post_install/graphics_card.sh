@@ -14,15 +14,16 @@ apt_install_auto_yes lshw
 echo "attempting to list the available display devices via lshw"
 lshw -C display
 
-graphics_card_vendor_and_model=`lspci -v | less | grep "VGA" | grep -Ei "nvidia|amd" | sed 's@.*controller: \(.*\)@\1@'`
-# change to lovercase
+graphics_card_vendor_and_model=`lspci -v | less | grep "VGA" | grep -Ei "nvidia|amd|intel" | sed 's@.*controller: \(.*\)@\1@'`
+# change to lowercase
 graphics_card_vendor_and_model=`echo ${graphics_card_vendor_and_model,,}`
 printf "\n identified graphics card: $graphics_card_vendor_and_model\n"
 
-add_ppa graphics-drivers/ppa
-apt_update
 if `echo $graphics_card_vendor_and_model | grep "nvidia" > /dev/null 2>&1`; then
 	echo "identified graphics card: nvidia, going ahead with the installation"
+
+	add_ppa graphics-drivers/ppa
+	apt_update
 
 	echo "blacklisting nouveau"
 	bash -c "echo blacklist nouveau > /etc/modprobe.d/blacklist-nvidia-nouveau.conf"
@@ -57,18 +58,54 @@ if `echo $graphics_card_vendor_and_model | grep "nvidia" > /dev/null 2>&1`; then
 elif `echo $graphics_card_vendor_and_model | grep "amd" > /dev/null 2>&1`; then
 	echo "identified graphics card: amd, going ahead with the installation"
 
-	add_ppa oibaf/graphics-drivers
+	# Ubuntu 24.04 has excellent AMD support in main repos, no PPA needed
 	apt_update
 
 	apt_install_auto_yes xserver-xorg-video-amdgpu "--reinstall"
 	dpkg --configure -a
 	dpkg-reconfigure gdm3 ubuntu-session xserver-xorg-video-amdgpu
 
-	apt_install_auto_yes mesa-vdpau-drivers
+	# Install mesa and vulkan drivers
+	apt_group_install_auto_yes "mesa-vulkan-drivers mesa-vdpau-drivers libgl1-mesa-dri libglx-mesa0"
 
-	printf -- "Section \"Device\"\n\tIdentifier \"AMDGPU\"\n\tDriver \"amdgpu\"\n\tOption \"AccelMethod\" \"glamor\"\n\tOption \"DRI\" \"3\"\nEndSection\n" >> /etc/X11/xorg.conf
+	# ROCm for compute workloads (optional, heavy)
+	# apt_group_install_auto_yes "rocm-hip-runtime rocm-opencl-runtime"
+
+	printf -- "Section \"Device\"\n\tIdentifier \"AMDGPU\"\n\tDriver \"amdgpu\"\n\tOption \"AccelMethod\" \"glamor\"\n\tOption \"DRI\" \"3\"\n\tOption \"TearFree\" \"true\"\nEndSection\n" >> /etc/X11/xorg.conf
+
+elif `echo $graphics_card_vendor_and_model | grep "intel" > /dev/null 2>&1`; then
+	echo "identified graphics card: intel, going ahead with the installation"
+
+	# Check for Intel Arc (Alchemist/Battlemage)
+	if lspci | grep -iE "arc|dg2|alchemist" > /dev/null 2>&1; then
+		echo "Intel Arc detected - installing enhanced drivers"
+		
+		# Intel Arc needs kernel 6.2+ (24.04 has 6.8+, so we're good)
+		apt_group_install_auto_yes "intel-gpu-tools intel-media-va-driver-non-free mesa-vulkan-drivers vulkan-tools"
+		
+		# Intel compute runtime for OpenCL
+		apt_group_install_auto_yes "intel-opencl-icd ocl-icd-opencl-dev"
+		
+		# Level Zero for compute
+		apt_group_install_auto_yes "level-zero-loader level-zero-devel"
+		
+		func_print_ok_message "Intel Arc drivers installed"
+		func_print_info_message "Test with: intel_gpu_top, vulkaninfo, clinfo"
+	else
+		echo "Intel integrated graphics detected"
+		apt_group_install_auto_yes "intel-media-va-driver mesa-vulkan-drivers"
+	fi
+
+	# Ensure i915 GuC/HuC firmware loading is enabled
+	if ! grep -q "i915.enable_guc" /etc/default/grub; then
+		sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 i915.enable_guc=3"/' /etc/default/grub
+		update-grub
+		func_print_info_message "Enabled Intel GuC/HuC firmware loading (requires reboot)"
+	fi
+
 else
-	echo "identified graphics card: unhandled, exiting"
+	echo "identified graphics card: unhandled or integrated, installing generic drivers"
+	apt_group_install_auto_yes "mesa-vulkan-drivers libgl1-mesa-dri"
 fi
 
 func_print_info_message "script end `basename "$0"`"

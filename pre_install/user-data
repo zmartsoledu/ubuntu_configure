@@ -68,9 +68,6 @@ autoinstall:
     # Point /bin/sh to bash
     - curtin in-target --target=/target -- ln -sf /bin/bash /bin/sh
     
-    # Copy post-install scripts to target
-    - mkdir -p /target/root/post_install
-    
     # Disable snap socket to prevent auto-refresh during setup
     - curtin in-target --target=/target -- systemctl mask snapd.socket snapd.service
     

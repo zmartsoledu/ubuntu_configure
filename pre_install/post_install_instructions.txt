@@ -3,7 +3,7 @@ Post-install Checklist
 ========================================
 
 1. Log in as the bootstrap sudo user you configured during autoinstall.
-   Username: zmartadmin
+   Username: __SUDO_USER__
    Password: <the value you entered during autoinstall>
 
 2. Clone the automation repository:
@@ -19,4 +19,3 @@ Post-install Checklist
    git pull
 
 Happy building!
-

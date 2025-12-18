@@ -5,6 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_SCRIPT="${SCRIPT_DIR}/configure_autoinstall.sh"
 DEFAULTS_FILE="${SCRIPT_DIR}/autoinstall.defaults"
 
+if [ "$EUID" -ne 0 ]; then
+    echo "EXIT[ERR]: build_media.sh must be run with sudo/root privileges" >&2
+    exit 1
+fi
+
 if [ ! -f "$DEFAULTS_FILE" ]; then
     echo "EXIT[ERR]: ${DEFAULTS_FILE} missing. Run configure_autoinstall.sh first." >&2
     exit 1
@@ -83,6 +88,14 @@ download_latest_ubuntu_iso() {
     local pattern description
     local escaped_release="${release//./\\.}"
     local base_url="https://releases.ubuntu.com/${release}/"
+    local checksum_file
+    checksum_file=$(mktemp)
+    echo "[i] Fetching SHA256SUMS from ${base_url}"
+    if ! curl -fsSL "${base_url}SHA256SUMS" -o "$checksum_file"; then
+        echo "EXIT[ERR]: Failed to download SHA256SUMS from ${base_url}" >&2
+        rm -f "$checksum_file"
+        exit 1
+    fi
     case "$flavour" in
         server)
             pattern="ubuntu-${escaped_release}[^\" ]*-live-server-amd64\\.iso"
@@ -94,6 +107,7 @@ download_latest_ubuntu_iso() {
             ;;
         *)
             echo "EXIT[ERR]: Unknown flavour $flavour" >&2
+            rm -f "$checksum_file"
             exit 1
             ;;
     esac
@@ -103,21 +117,53 @@ download_latest_ubuntu_iso() {
     iso_name=$(curl -fsSL "$base_url" | grep -oE "$pattern" | sort -Vr | head -n1 || true)
     if [ -z "$iso_name" ]; then
         echo "EXIT[ERR]: Could not determine latest ${description} ISO" >&2
+        rm -f "$checksum_file"
         exit 1
     fi
 
     local dest="$PWD/$iso_name"
+    local expected_hash
+    expected_hash=$(awk -v iso="$iso_name" '{fname=$2; gsub("\\*", "", fname); if (fname==iso) {print $1; exit}}' "$checksum_file" || true)
+    if [ -z "$expected_hash" ]; then
+        echo "EXIT[ERR]: Could not find checksum entry for ${iso_name}" >&2
+        rm -f "$checksum_file"
+        exit 1
+    fi
+
+    local have_valid_iso="false"
     if [ -f "$dest" ]; then
-        echo "[i] Using existing $dest"
-    else
+        echo "[i] Verifying existing $dest checksum"
+        local current
+        current=$(sha256sum "$dest" | awk '{print $1}')
+        if [ "$current" = "$expected_hash" ]; then
+            echo "[i] Using existing $dest (checksum verified)"
+            have_valid_iso="true"
+        else
+            echo "[WARN] Existing $dest checksum mismatch. Re-downloading."
+            rm -f "$dest"
+        fi
+    fi
+
+    if [ "$have_valid_iso" != "true" ]; then
         echo "[+] Downloading $iso_name"
         if ! wget -O "$dest" "${base_url}${iso_name}"; then
             echo "EXIT[ERR]: Failed to download ${description} ISO" >&2
             rm -f "$dest"
+            rm -f "$checksum_file"
+            exit 1
+        fi
+        echo "[i] Calculating checksum for $dest"
+        local current
+        current=$(sha256sum "$dest" | awk '{print $1}')
+        if [ "$current" != "$expected_hash" ]; then
+            echo "EXIT[ERR]: Downloaded ${iso_name} but checksum verification failed" >&2
+            rm -f "$dest"
+            rm -f "$checksum_file"
             exit 1
         fi
     fi
     ISO_INPUT="$dest"
+    rm -f "$checksum_file"
 }
 
 set_default_output_name() {

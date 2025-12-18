@@ -47,8 +47,10 @@ cd pre_install
 ./build_media.sh --iso /path/to/ubuntu-24.04-live-server-amd64.iso
 ```
 
+- Run it with `sudo` (the script now validates root access up front).
 - Optional flags: `--output custom.iso` and `--seed custom_seed.img` (defaults are timestamped ISO + `seed.img`).
 - Produces `seed.img` plus a timestamped ISO named after the source image (e.g., `ubuntu-24.04-live-server-amd64_autoinstall_25_01_05__14_32_10.iso`).
+- Automatically downloads the latest Ubuntu 24.04 server/desktop ISO on demand and verifies the SHA256 checksum (reusing the file if it already matches).
 - Copies that payload into the ISO (`/cdrom/nocloud/…`) and onto the installed server as `/root/ubuntu_configure_next_steps.txt`, so the git clone instructions are already in place after first boot.
 - Detects removable USB drives and waits up to 10 seconds for a selection; press Enter (or let it time out) to skip flashing. When skipped, the script prints an example `dd` command.
 - Uses `sudo` only for mount/umount and the optional USB write.

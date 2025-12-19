@@ -14,4 +14,20 @@ Post-install Checklist
    cd ~/ubuntu_configure
    git pull
 
+4. Configure networking
+       - Edit /etc/netplan/*.yaml so each interface has optional: true. Example:  network:
+           version: 2
+           ethernets:
+             enp0s31f6:
+               dhcp4: true
+               optional: true
+           wifis:
+             wlp3s0:
+               access-points:
+                 "YourSSID":
+                   password: "YourPassphrase"
+               dhcp4: true
+               optional: true
+       - Apply with sudo netplan apply. “Optional” tells systemd-networkd to skip the boot wait even if the link never appears.
+
 Happy building!

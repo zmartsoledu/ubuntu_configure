@@ -544,7 +544,7 @@ main() {
     echo "  ISO : $OUTPUT_ISO"
     echo "  Seed: $SEED_IMG"
     echo "  Defaults file: $DEFAULTS_FILE"
-    echo "\nReview the installer values in: $DEFAULTS_FILE"
+    printf "\nReview the installer values in: $DEFAULTS_FILE"
 }
 
 main "$@"

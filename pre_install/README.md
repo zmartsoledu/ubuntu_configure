@@ -34,7 +34,6 @@ This folder contains the `user-data` and `meta-data` files that turn the stock U
 Run the helper to review or override the bootstrap values before repacking the ISO:
 
 ```bash
-cd pre_install
 ./configure_autoinstall.sh
 ```
 
@@ -43,7 +42,6 @@ The script prompts for installation parameters (username, locale, timezone, LUKS
 ## Build media with one command
 
 ```bash
-cd pre_install
 ./build_media.sh --iso /path/to/ubuntu-24.04-live-server-amd64.iso
 ```
 

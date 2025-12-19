@@ -79,6 +79,9 @@ autoinstall:
     
     # Set up SSH to be disabled after first login
     - echo "systemctl disable --now ssh" > /target/root/.ssh_disable_pending
+
+    # Pause for operator confirmation before reboot
+    - /bin/bash -c 'echo ""; echo "Installation complete."; read -p "Remove installation media, then press Enter to reboot..." _; reboot'
   
   # User data completion
   user-data:

@@ -3,32 +3,42 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG_SCRIPT="${SCRIPT_DIR}/configure_autoinstall.sh"
-DEFAULTS_FILE="${SCRIPT_DIR}/../post_install/defaults.env"
+POST_INSTALL_DIR="${SCRIPT_DIR}/../post_install"
+DEFAULTS_BASE="${POST_INSTALL_DIR}/defaults.env"
+DEFAULTS_OVERRIDE="${POST_INSTALL_DIR}/defaults_override.env"
+DEFAULTS_FILE=""
 
 if [ "$EUID" -ne 0 ]; then
     echo "EXIT[ERR]: build_media.sh must be run with sudo/root privileges" >&2
     exit 1
 fi
 
-if [ ! -f "$DEFAULTS_FILE" ]; then
-    echo "EXIT[ERR]: ${DEFAULTS_FILE} missing. Run configure_autoinstall.sh first." >&2
-    exit 1
-fi
-
 ISO_INPUT=""
 OUTPUT_ISO=""
 SEED_IMG="seed.img"
+FLASH_ONLY=0
 
 usage() {
     cat <<'EOF'
 Usage: build_media.sh [--iso /path/to/ubuntu.iso] [--output custom.iso] [--seed seed.img]
 
 Options:
-  --iso PATH       Path to the Ubuntu Server ISO (required).
+  --iso PATH       Path to the Ubuntu Server ISO (required unless autodownload kicks in).
   --output PATH    Output ISO name (defaults to <input>_autoinstall_<timestamp>.iso).
   --seed PATH      Seed image name (default: seed.img).
+  --flash-only     Skip ISO customization and only flash an existing ISO to USB.
   --help           Show this help and exit.
 EOF
+}
+
+select_defaults_file() {
+    if [ -f "$DEFAULTS_OVERRIDE" ]; then
+        printf '%s\n' "$DEFAULTS_OVERRIDE"
+    elif [ -f "$DEFAULTS_BASE" ]; then
+        printf '%s\n' "$DEFAULTS_BASE"
+    else
+        printf ''
+    fi
 }
 
 while [[ $# -gt 0 ]]; do
@@ -45,6 +55,10 @@ while [[ $# -gt 0 ]]; do
             SEED_IMG="$2"
             shift 2
             ;;
+        --flash-only)
+            FLASH_ONLY=1
+            shift
+            ;;
         --help)
             usage
             exit 0
@@ -56,6 +70,18 @@ while [[ $# -gt 0 ]]; do
             ;;
     esac
 done
+
+if [ "$FLASH_ONLY" -eq 1 ] && [ -z "$ISO_INPUT" ]; then
+    echo "EXIT[ERR]: --flash-only requires --iso /path/to/existing.iso" >&2
+    exit 1
+fi
+
+DEFAULTS_FILE="$(select_defaults_file)"
+if [ -z "$DEFAULTS_FILE" ]; then
+    echo "EXIT[ERR]: Could not find ${DEFAULTS_OVERRIDE} or ${DEFAULTS_BASE}. Run configure_autoinstall.sh first." >&2
+    exit 1
+fi
+
 WORKDIR=$(mktemp -d)
 NOCLOUD_TMP=$(mktemp -d)
 cleanup() {
@@ -223,7 +249,11 @@ ensure_iso_ready() {
         exit 1
     fi
     ISO_INPUT="$(readlink -f "$ISO_INPUT")"
-    set_default_output_name
+    if [ "$FLASH_ONLY" -eq 0 ]; then
+        set_default_output_name
+    elif [ -z "$OUTPUT_ISO" ]; then
+        OUTPUT_ISO="$ISO_INPUT"
+    fi
 }
 
 sudo_cmd() {
@@ -402,7 +432,9 @@ unmount_block_device() {
     if [ ${#entries[@]} -gt 0 ]; then
         echo "[i] Unmounting volumes on ${dev}"
         for mp in "${entries[@]}"; do
-            sudo_cmd umount "$mp" || echo "[WARN] Failed to unmount $mp"
+            if findmnt -rno TARGET --target "$mp" >/dev/null 2>&1; then
+                sudo_cmd umount "$mp" || echo "[WARN] Failed to unmount $mp"
+            fi
         done
     fi
 }
@@ -465,10 +497,25 @@ prompt_usb_target() {
 }
 
 main() {
+    require_cmd lsblk
+    require_cmd findmnt
+
+    if [ "$FLASH_ONLY" -eq 1 ]; then
+        require_cmd dd
+        require_cmd partprobe
+        ensure_iso_ready
+        OUTPUT_ISO="$ISO_INPUT"
+        echo "[i] Flash-only mode: skipping ISO customization."
+        prompt_usb_target
+        echo ""
+        echo "[Done] Flashed image: $OUTPUT_ISO"
+        echo "Defaults file: $DEFAULTS_FILE"
+        return
+    fi
+
     require_cmd cloud-localds
     require_cmd xorriso
     require_cmd sfdisk
-    require_cmd lsblk
     require_cmd rsync
     require_cmd python3
 
@@ -481,6 +528,8 @@ main() {
     printf "\n[Done] Outputs:"
     echo "  ISO : $OUTPUT_ISO"
     echo "  Seed: $SEED_IMG"
+    echo "  Defaults file: $DEFAULTS_FILE"
+    echo "\nReview the installer values in: $DEFAULTS_FILE"
 }
 
 main "$@"

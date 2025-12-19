@@ -2,3 +2,4 @@
 *.iso
 squashfs-root/
 OVMF.fd
+post_install_instructions.txt

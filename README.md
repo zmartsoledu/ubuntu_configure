@@ -10,7 +10,7 @@ This repository automates both halves of building a reproducible Ubuntu 24.04 wo
 ## Workflow overview
 
 1. **Create installation media (pre_install/README.md).**
-   - Run `pre_install/configure_autoinstall.sh` to confirm or override the bootstrap user, password, hostname, locale, timezone, LUKS passphrase, etc. (the script persists your answers in `post_install/defaults.env`).
+   - Run `pre_install/configure_autoinstall.sh` to confirm or override the bootstrap user, password, hostname, locale, timezone, LUKS passphrase, etc. (the script now saves your answers in `post_install/defaults_override.env`, falling back to the tracked `defaults.env` when no overrides exist).
    - Download the Ubuntu 24.04 Server ISO.
    - Use `pre_install/build_media.sh --iso /path/to/iso` to generate both the custom ISO and the matching `seed.img`, with an optional USB flashing step (the script can also download the latest 24.04 images for you).
    - The helper copies `user-data`, `meta-data`, and the post-install checklist into `/cdrom/nocloud/` and onto the installed system so instructions are always available.

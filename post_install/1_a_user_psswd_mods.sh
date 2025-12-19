@@ -6,12 +6,21 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-DEFAULTS_FILE="${SCRIPT_DIR}/defaults.env"
+DEFAULTS_BASE="${SCRIPT_DIR}/defaults.env"
+DEFAULTS_OVERRIDE="${SCRIPT_DIR}/defaults_override.env"
+REMOVE_SCRIPT_PATH="${SCRIPT_DIR}/remove_bootstrap_user.sh"
 
-if [ -f "$DEFAULTS_FILE" ]; then
-    # shellcheck disable=SC1090
-    source "$DEFAULTS_FILE"
+if [ -f "$DEFAULTS_OVERRIDE" ]; then
+    DEFAULTS_FILE="$DEFAULTS_OVERRIDE"
+elif [ -f "$DEFAULTS_BASE" ]; then
+    DEFAULTS_FILE="$DEFAULTS_BASE"
+else
+    echo "EXIT[ERR]: Expected ${DEFAULTS_OVERRIDE} or ${DEFAULTS_BASE} for default values." >&2
+    exit 1
 fi
+
+# shellcheck disable=SC1090
+source "$DEFAULTS_FILE"
 
 detect_primary_user() {
     getent passwd | awk -F: '$3 >= 1000 && $1 != "nobody" {print $1; exit}'
@@ -31,21 +40,26 @@ fi
 create_removal_helper() {
     local keeper="$1"
     local target="$2"
-    local keeper_home
-    keeper_home="$(getent passwd "$keeper" | awk -F: '{print $6}')"
-    if [ -z "$keeper_home" ]; then
-        echo "Could not determine ${keeper}'s home to schedule removal of ${target}." >&2
-        return 1
-    fi
-    local script_path="${keeper_home}/remove_${target}.sh"
-    cat >"$script_path" <<EOF
+    rm -f "$REMOVE_SCRIPT_PATH"
+    cat >"$REMOVE_SCRIPT_PATH" <<EOF
 #!/bin/bash
-set -e
-sudo userdel -rf ${target}
+set -euo pipefail
+if [ "\$(id -u)" != "0" ]; then
+    echo "remove_bootstrap_user.sh must be run as root" >&2
+    exit 1
+fi
+TARGET_USER="${target}"
+if id "\${TARGET_USER}" >/dev/null 2>&1; then
+    echo "Removing bootstrap sudo user \${TARGET_USER}..."
+    userdel -rf "\${TARGET_USER}"
+    echo "Removed \${TARGET_USER}."
+else
+    echo "Bootstrap sudo user '\${TARGET_USER}' not found; nothing to remove."
+fi
 EOF
-    chown "$keeper:$keeper" "$script_path"
-    chmod 750 "$script_path"
-    echo "Run ~/${script_path##*/} after logging in as ${keeper} to remove ${target}."
+    chmod 750 "$REMOVE_SCRIPT_PATH"
+    chown "$keeper:$keeper" "$REMOVE_SCRIPT_PATH" 2>/dev/null || true
+    echo "Saved removal helper $(basename "$REMOVE_SCRIPT_PATH"). It will be invoked automatically by 1_b_upgrade_after_first_boot.sh or you can run it manually as ${keeper}."
 }
 
 maybe_remove_bootstrap_user() {

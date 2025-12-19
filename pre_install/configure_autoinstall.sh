@@ -4,9 +4,21 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 USER_DATA="${SCRIPT_DIR}/user-data"
 META_DATA="${SCRIPT_DIR}/meta-data"
-DEFAULTS_FILE="${SCRIPT_DIR}/../post_install/defaults.env"
+POST_INSTALL_DIR="${SCRIPT_DIR}/../post_install"
+DEFAULTS_FILE_BASE="${POST_INSTALL_DIR}/defaults.env"
+DEFAULTS_OVERRIDE_FILE="${POST_INSTALL_DIR}/defaults_override.env"
 INSTRUCTIONS_TEMPLATE="${SCRIPT_DIR}/post_install_instructions.template"
 INSTRUCTIONS_OUTPUT="${SCRIPT_DIR}/post_install_instructions.txt"
+
+select_defaults_file() {
+    if [ -f "$DEFAULTS_OVERRIDE_FILE" ]; then
+        printf '%s\n' "$DEFAULTS_OVERRIDE_FILE"
+    elif [ -f "$DEFAULTS_FILE_BASE" ]; then
+        printf '%s\n' "$DEFAULTS_FILE_BASE"
+    else
+        printf ''
+    fi
+}
 
 if [ ! -f "$USER_DATA" ]; then
     echo "EXIT[ERR]: user-data not found in ${SCRIPT_DIR}" >&2
@@ -18,13 +30,14 @@ if ! command -v openssl >/dev/null 2>&1; then
     exit 1
 fi
 
-if [ ! -f "$DEFAULTS_FILE" ]; then
-    echo "EXIT[ERR]: ${DEFAULTS_FILE} is missing. Run from a clean repo." >&2
+DEFAULTS_SOURCE="$(select_defaults_file)"
+if [ -z "$DEFAULTS_SOURCE" ]; then
+    echo "EXIT[ERR]: Could not find ${DEFAULTS_OVERRIDE_FILE} or ${DEFAULTS_FILE_BASE}." >&2
     exit 1
 fi
 
 # shellcheck disable=SC1090
-source "$DEFAULTS_FILE"
+source "$DEFAULTS_SOURCE"
 
 prompt_value() {
     local prompt default var
@@ -100,7 +113,7 @@ instance-id: ${INSTANCE_ID}
 local-hostname: ${LOCAL_HOSTNAME}
 EOF
 
-cat > "$DEFAULTS_FILE" <<EOF
+cat > "$DEFAULTS_OVERRIDE_FILE" <<EOF
 DEFAULT_SUDO_USER="${ADMIN_USER}"
 DEFAULT_SUDO_PASSWORD="${ADMIN_PASSWORD}"
 DEFAULT_HOSTNAME="${ADMIN_HOSTNAME}"
@@ -113,6 +126,8 @@ DEFAULT_KB_LAYOUT="${KB_LAYOUT}"
 DEFAULT_KB_VARIANT="${KB_VARIANT}"
 DEFAULT_TIMEZONE="${TIMEZONE_VALUE}"
 EOF
+
+echo "[i] Stored installer answers in ${DEFAULTS_OVERRIDE_FILE}"
 
 if [ -f "$INSTRUCTIONS_TEMPLATE" ]; then
     SUDO_USER_ESC=$(escape_sed "$ADMIN_USER")

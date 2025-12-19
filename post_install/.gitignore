@@ -2,3 +2,5 @@ run_manually.sh
 *.log
 katoolin
 Anaconda*.sh
+remove_bootstrap_user.sh
+defaults_override.env

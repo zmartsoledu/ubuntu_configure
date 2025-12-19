@@ -8,11 +8,11 @@ These scripts assume you have completed the unattended Ubuntu 24.04 installation
 
 1. `1_a_user_psswd_mods.sh`
    - Enforce `/bin/sh -> bash`, set timezone, and configure the real admin user.
-   - Auto-detects the primary sudoer (first UID ≥ 1000) and the active hostname, only falling back to `post_install/defaults.env` for the stored LUKS passphrase so you no longer have to babysit duplicate `DEFAULT_*` values.
-   - Lets you create or reuse a sudoer, immediately reset that account’s password, rename the host, rotate the LUKS passphrase, optionally remove the bootstrap account (deleting it outright when possible or dropping a helper script in the new admin’s home if not), and launch `luks_autounlock.sh` for USB/YubiKey unlock.
-2. *(After reboot, log in as the new admin and run `~/first_boot.sh` if it was generated.)*
+   - Auto-detects the primary sudoer (first UID ≥ 1000) and the active hostname, only reading the stored LUKS passphrase/user defaults from `post_install/defaults_override.env` (or `defaults.env` if no override exists) so you no longer have to babysit duplicate `DEFAULT_*` values.
+   - Lets you create or reuse a sudoer, immediately reset that account’s password, rename the host, rotate the LUKS passphrase, optionally remove the bootstrap account (deleting it outright when possible or writing `remove_bootstrap_user.sh` next to the scripts so Stage 1_b—or you manually—can finish the job), and launch `luks_autounlock.sh` for USB/YubiKey unlock.
+2. *(After reboot, log in as the new admin; any deferred bootstrap-user removal will be handled automatically when you run 1_b.)*
 3. `1_b_upgrade_after_first_boot.sh`
-   - Full system upgrade + firmware refresh.
+   - Runs `remove_bootstrap_user.sh` automatically if it exists, then performs the full system upgrade + firmware refresh.
 4. `1_c_snap_cleanup.sh`
    - Stops every snapd unit/socket, backs up `snap list`, purges each snap (core snaps included), removes snapd/flatpak packages, pins them at `Pin-Priority: -1`, cleans all snap/flatpak directories, deletes the PATH hook, and reloads systemd units so nothing snap-related lingers.
 5. `1_d_server_extras.sh`

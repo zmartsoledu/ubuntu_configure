@@ -5,7 +5,16 @@ if [ `id -u` != "0" ]; then
 	exit -1
 fi
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REMOVE_SCRIPT="${SCRIPT_DIR}/remove_bootstrap_user.sh"
+
 source ./common_bash_funcs.sh
+
+if [ -f "$REMOVE_SCRIPT" ]; then
+	func_print_info_message "Running deferred bootstrap-user removal..."
+	bash "$REMOVE_SCRIPT"
+	rm -f "$REMOVE_SCRIPT"
+fi
 
 # point /bin/sh to bash
 ln -sf /bin/bash /bin/sh

@@ -94,6 +94,9 @@ copy_nocloud_sources() {
     local user_data_src="${SCRIPT_DIR}/user-data"
     if [ -f "${SCRIPT_DIR}/user-data-override" ]; then
         user_data_src="${SCRIPT_DIR}/user-data-override"
+        echo "[i] Using customized user-data-override"
+    else
+        echo "[i] Using stock user-data"
     fi
 
     if [ ! -f "$user_data_src" ]; then

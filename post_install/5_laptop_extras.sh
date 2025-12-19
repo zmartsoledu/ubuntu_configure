@@ -67,20 +67,8 @@ EOF
 tlp start
 func_print_ok_message "TLP configured and started"
 
-# WiFi
-print_info "Configuring WiFi..."
-apt_group_install_auto_yes "wireless-tools wpasupplicant"
-
-# Check for Intel WiFi cards and install firmware
-if lspci | grep -i "wireless" | grep -i "intel" >/dev/null; then
-	print_info "Intel WiFi detected, installing firmware..."
-	apt_install_auto_yes "firmware-iwlwifi" 2>/dev/null || {
-		# Ubuntu 24.04 may have this in linux-firmware
-		apt_install_auto_yes "linux-firmware"
-	}
-fi
-
-# Enable WiFi power management
+# WiFi tweaks (drivers installed during Stage 1 server extras)
+print_info "Applying WiFi power optimizations..."
 if [ ! -f /etc/NetworkManager/conf.d/wifi-powersave.conf ]; then
 	mkdir -p /etc/NetworkManager/conf.d/
 	cat > /etc/NetworkManager/conf.d/wifi-powersave.conf << 'EOF'
@@ -88,16 +76,16 @@ if [ ! -f /etc/NetworkManager/conf.d/wifi-powersave.conf ]; then
 wifi.powersave = 2
 EOF
 	func_print_ok_message "WiFi power saving configured"
+else
+	func_print_info_message "WiFi power saving file already present"
 fi
 
-# Bluetooth
-print_info "Installing Bluetooth support..."
-apt_group_install_auto_yes "bluez bluez-tools blueman"
-
+# Bluetooth service (bluez core installed during Stage 1)
+print_info "Ensuring Bluetooth service is active..."
+apt_group_install_auto_yes "blueman"
 systemctl enable bluetooth
 systemctl start bluetooth
-
-func_print_ok_message "Bluetooth enabled"
+func_print_ok_message "Bluetooth service running"
 
 # Suspend and Hibernate
 print_info "Configuring suspend/hibernate..."
@@ -186,7 +174,7 @@ print_info "Laptop configuration complete!"
 echo ""
 print_info "Summary:"
 print_info "  ✓ TLP power management installed and configured"
-print_info "  ✓ WiFi and Bluetooth enabled"
+print_info "  ✓ WiFi power savings & Bluetooth service tuned"
 print_info "  ✓ Suspend on lid close configured"
 print_info "  ✓ Backlight control enabled"
 if [ $IS_LAPTOP -eq 1 ]; then

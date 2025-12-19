@@ -22,10 +22,12 @@ apt_group_install_auto_yes "gnome-tweaks gnome-shell-extensions \
     gnome-disk-utility file-roller"
 
 # Optional: Remove snap firefox if it got installed
-snap list 2>/dev/null | grep firefox >/dev/null && {
-    func_print_info_message "Removing snap firefox..."
-    snap remove --purge firefox
-}
+if command -v snap >/dev/null 2>&1; then
+	snap list 2>/dev/null | grep firefox >/dev/null && {
+		func_print_info_message "Removing snap firefox..."
+		snap remove --purge firefox
+	}
+fi
 
 sudo apt --fix-broken install
 

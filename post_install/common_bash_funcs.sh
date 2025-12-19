@@ -181,24 +181,6 @@ function apt_install_auto_yes() {
     fi
 }
 
-function snap_group_install() {
-    local __snap_package_list="$1"
-    local __extra_snap_opts="$2"
-
-    local __snap_pkg_to_inst=""
-    for __snap_pkg_to_inst in $__snap_package_list; do
-        snap_install "$__snap_pkg_to_inst" "$__extra_snap_opts"
-    done
-}
-
-function snap_install() {
-    local __snap_pkg_name="$1"
-    local __snap_opts="$2"
-
-    sudo snap install "$__snap_pkg_name" $__snap_opts
-    func_print_ok_fail_on_ret_code "$?" "install_snap $__snap_pkg_name $__snap_opts"
-}
-
 function apt_update() {
     sudo apt-get update
     func_print_ok_fail_on_ret_code "$?" "apt_update"

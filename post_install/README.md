@@ -8,13 +8,15 @@ These scripts assume you have completed the unattended Ubuntu 24.04 installation
 
 1. `1_a_user_psswd_mods.sh`
    - Enforce `/bin/sh -> bash`, set timezone, and configure the real admin user.
-   - Change hostname (default `zmart-u24`) and replace the default LUKS passphrase (`zmart-default-luks`).
-   - Optionally remove the bootstrap `zmartadmin` account and launch `luks_autounlock.sh` for USB/YubiKey unlock.
+   - Auto-detects the primary sudoer (first UID ≥ 1000) and the active hostname, only falling back to `post_install/defaults.env` for the stored LUKS passphrase so you no longer have to babysit duplicate `DEFAULT_*` values.
+   - Lets you create or reuse a sudoer, immediately reset that account’s password, rename the host, rotate the LUKS passphrase, optionally remove the bootstrap account (deleting it outright when possible or dropping a helper script in the new admin’s home if not), and launch `luks_autounlock.sh` for USB/YubiKey unlock.
 2. *(After reboot, log in as the new admin and run `~/first_boot.sh` if it was generated.)*
 3. `1_b_upgrade_after_first_boot.sh`
    - Full system upgrade + firmware refresh.
-4. `1_c_server_extras.sh`
-   - Installs foundational tooling: build-essential, libvirt/KVM, Docker (with compose plugin), Azure/Vagrant helpers, CLI utilities, etc.
+4. `1_c_snap_cleanup.sh`
+   - Stops every snapd unit/socket, backs up `snap list`, purges each snap (core snaps included), removes snapd/flatpak packages, pins them at `Pin-Priority: -1`, cleans all snap/flatpak directories, deletes the PATH hook, and reloads systemd units so nothing snap-related lingers.
+5. `1_d_server_extras.sh`
+   - Installs foundational tooling plus GitHub Copilot CLI (`copilot`) and the baseline Wi-Fi/Bluetooth stack (wireless-tools, firmware, bluez) so every server starts with networking hardware ready.
 
 ## Stage 2 – Graphics preparation
 
@@ -25,26 +27,21 @@ These scripts assume you have completed the unattended Ubuntu 24.04 installation
 ## Stage 3 – Desktop, networking, and productivity
 
 1. `gnome_desktop.sh`
-   - Installs the minimal Ubuntu desktop stack without snaps.
+   - Installs the minimal Ubuntu desktop stack without snaps or flatpak dependencies.
 2. `3_post_graph.sh`
-   - Switches to NetworkManager, configures Flatpak, installs fonts, PowerShell, VS Code repo, etc.
+   - Switches to NetworkManager, installs fonts, PowerShell, the VS Code apt repo, and vendor-supplied builds of desktop apps (Postman, Draw.io, Discord, Slack, Telegram).
 3. `general.sh` & `docker.sh`
    - Already covered for server usage, but rerun if you skipped them earlier and now need desktop conveniences.
 
 ## Stage 4 – Optional desktop applications
 
 - `4_graph_optionals.sh`
-  - Adds browsers, communication tools, flatpak apps, media utilities, etc. Edit the script to tailor the list before executing.
+  - Adds browsers, communication tools, and media utilities strictly from apt repos or upstream tarballs. Edit the script to tailor the list before executing.
 
-## Stage 5 – Snap removal
+## Stage 5 – Laptop extras
 
-- `5_snap_removal.sh`
-  - Purges snapd only after flatpak/native replacements exist, places apt holds, and cleans lingering snap mounts. Reboot afterward.
-
-## Stage 6 – Laptop extras
-
-- `6_laptop_extras.sh`
-  - Enables Wi-Fi/Bluetooth firmware, TLP power tuning, suspend fixes, brightness controls, and other mobile-focused tweaks.
+- `5_laptop_extras.sh`
+  - Layers laptop niceties (TLP tuning, Wi-Fi power-saving, Bluetooth UI helpers, suspend tweaks, brightness rules, etc.) on top of the baseline drivers established in Stage 1.
 
 ## Optional hardening & convenience scripts
 
@@ -60,13 +57,15 @@ After each stage, validate the state before continuing:
 # Stage 1
 systemctl status ssh
 sudo docker compose version
+command -v snap >/dev/null && echo "snap still present"
+command -v flatpak >/dev/null && echo "flatpak still present"
 
 # Stage 3
 nmcli device
-flatpak list
+code --version
 
 # Stage 5
-snap list 2>&1 | grep "not found"
+tlp-stat -s
 ```
 
 For more context on what each script installs, open it in an editor or consult the project wiki. Feel free to comment out sections you do not need before executing.

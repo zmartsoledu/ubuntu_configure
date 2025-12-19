@@ -7,6 +7,94 @@ fi
 
 source ./common_bash_funcs.sh
 
+install_deb_from_url() {
+	local name="$1"
+	local url="$2"
+	local tmp
+	tmp=$(mktemp --suffix=.deb)
+	if curl -fsSL "$url" -o "$tmp"; then
+		if dpkg -i "$tmp" >/dev/null 2>&1; then
+			func_print_ok_message "$name installed"
+		else
+			func_print_warn_message "Resolving dependencies for $name"
+			DEBIAN_FRONTEND=noninteractive apt-get install -f -y >/dev/null 2>&1 || true
+			if dpkg -i "$tmp" >/dev/null 2>&1; then
+				func_print_ok_message "$name installed"
+			else
+				func_print_fail_message "$name installation failed"
+			fi
+		fi
+	else
+		func_print_fail_message "Failed to download $name"
+	fi
+	rm -f "$tmp"
+}
+
+install_teams_for_linux() {
+	local url
+	url=$(python3 - <<'PY'
+import json
+import sys
+import urllib.request
+try:
+	with urllib.request.urlopen("https://api.github.com/repos/IsmaelMartinez/teams-for-linux/releases/latest", timeout=30) as resp:
+		data = json.load(resp)
+except Exception:
+	sys.exit(0)
+for asset in data.get("assets", []):
+	name = asset.get("name", "")
+	if name.endswith("amd64.deb"):
+		print(asset.get("browser_download_url", ""))
+		sys.exit(0)
+PY
+	)
+	if [ -n "$url" ]; then
+		install_deb_from_url "teams-for-linux" "$url"
+	else
+		func_print_warn_message "Could not locate teams-for-linux release"
+	fi
+}
+
+install_storage_explorer() {
+	local tmpdir
+	tmpdir=$(mktemp -d)
+	local archive="$tmpdir/storage.tar.gz"
+	if curl -fsSL https://go.microsoft.com/fwlink/?LinkId=722418 -o "$archive"; then
+		local extract_dir="$tmpdir/extracted"
+		mkdir -p "$extract_dir"
+		tar -xzf "$archive" -C "$extract_dir"
+		local payload
+		payload=$(find "$extract_dir" -maxdepth 1 -mindepth 1 -type d | head -n1)
+		if [ -z "$payload" ]; then
+			func_print_warn_message "Azure Storage Explorer archive format unexpected"
+		else
+			rm -rf /opt/StorageExplorer
+			mkdir -p /opt
+			mv "$payload" /opt/StorageExplorer
+			chmod +x /opt/StorageExplorer/StorageExplorer 2>/dev/null || true
+			ln -sf /opt/StorageExplorer/StorageExplorer /usr/local/bin/storage-explorer
+			local icon_path
+			icon_path=$(find /opt/StorageExplorer -maxdepth 4 -type f -name '*.png' | head -n1)
+			[ -z "$icon_path" ] && icon_path=/opt/StorageExplorer/StorageExplorer
+			cat > /usr/share/applications/storage-explorer.desktop <<EOF
+[Desktop Entry]
+Name=Azure Storage Explorer
+Comment=Microsoft Azure Storage Explorer
+Exec=/usr/local/bin/storage-explorer
+Icon=$icon_path
+Terminal=false
+Type=Application
+Categories=Utility;
+EOF
+			chmod 644 /usr/share/applications/storage-explorer.desktop
+			func_print_ok_message "Azure Storage Explorer installed under /opt/StorageExplorer"
+		fi
+	else
+		func_print_warn_message "Azure Storage Explorer download failed"
+	fi
+	rm -rf "$tmpdir"
+}
+
 echo -e "\nupdate and install main apt packages\n"
 apt_upgrade
 
@@ -55,19 +143,10 @@ else
 	echo -e "skipping tor browser installation\n"
 fi
 
-# Flatpak apps (snap replacements)
-func_print_info_message "Installing flatpak optional apps..."
-flatpak install -y flathub org.shotcut.Shotcut 2>/dev/null || func_print_warn_message "Shotcut flatpak failed"
-flatpak install -y flathub com.github.IsmaelMartinez.teams_for_linux 2>/dev/null || func_print_warn_message "Teams flatpak failed"
-
-# Microsoft Azure Storage Explorer via snap alternative
-# Install from .deb if available
-AZURE_STORAGE_DEB_URL="https://go.microsoft.com/fwlink/?LinkId=722418"
-wget -O azure-storage-explorer.deb "$AZURE_STORAGE_DEB_URL" 2>/dev/null && {
-	apt_install_auto_yes ./azure-storage-explorer.deb
-	rm -f azure-storage-explorer.deb
-	func_print_ok_message "Azure Storage Explorer installed from deb"
-} || func_print_warn_message "Azure Storage Explorer download failed"
+func_print_info_message "Installing optional desktop apps without flatpak..."
+apt_install_auto_yes shotcut
+install_teams_for_linux
+install_storage_explorer
 
 SCRIPT_LOC=`pwd`
 cd /home/$SUDO_USER

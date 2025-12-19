@@ -4,7 +4,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 USER_DATA="${SCRIPT_DIR}/user-data"
 META_DATA="${SCRIPT_DIR}/meta-data"
-DEFAULTS_FILE="${SCRIPT_DIR}/autoinstall.defaults"
+DEFAULTS_FILE="${SCRIPT_DIR}/../post_install/defaults.env"
 INSTRUCTIONS_TEMPLATE="${SCRIPT_DIR}/post_install_instructions.template"
 INSTRUCTIONS_OUTPUT="${SCRIPT_DIR}/post_install_instructions.txt"
 

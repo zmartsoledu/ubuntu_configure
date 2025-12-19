@@ -38,7 +38,7 @@ cd pre_install
 ./configure_autoinstall.sh
 ```
 
-The script prompts for installation parameters (username, locale, timezone, LUKS passphrase, etc.), updates `user-data`/`meta-data`, and regenerates `post_install_instructions.txt` so those values travel with every build.
+The script prompts for installation parameters (username, locale, timezone, LUKS passphrase, etc.), updates `user-data`/`meta-data`, and regenerates `post_install_instructions.txt` so those values travel with every build. Your answers are written back into `post_install/defaults.env`, which now serves as the single source of truth for both the installer customization and the Stage 1 hardening script.
 
 ## Build media with one command
 
@@ -56,6 +56,42 @@ cd pre_install
 - Uses `sudo` only for mount/umount and the optional USB write.
 
 At boot you will see two entries: **Autoinstall Ubuntu Server (default)** and the original interactive installer as a fallback. For VM testing, pair the generated `seed.img` with the stock ISO and boot with `autoinstall ds=nocloud;s=/dev/sdX`; the payload matches the ISO exactly, so behavior stays consistent.
+
+## Test quickly with QEMU/KVM (VirtualBox-free workflow)
+
+Most laptops refuse to let nested VirtualBox switch into VMX root mode when they’re already running under KVM or Hyper-V. The commands below let you exercise both the self-contained autoinstall ISO and the stock ISO + `seed.img` combo without touching VirtualBox.
+
+1. Create a disposable VM disk:
+   ```bash
+   qemu-img create -f qcow2 ~/vm-disks/ubuntu_autoinstall.qcow2 40G
+   ```
+2. **Use the custom ISO only** (NoCloud payload baked in by `build_media.sh`):
+   ```bash
+   qemu-system-x86_64 \
+     -enable-kvm -machine q35,accel=kvm \
+     -cpu host -smp 4 -m 8G \
+     -drive file=/path/to/ubuntu-24.04-live-server_autoinstall.iso,media=cdrom,if=virtio \
+     -drive file=~/vm-disks/ubuntu_autoinstall.qcow2,if=virtio \
+     -boot order=d
+   ```
+   This boots straight into the “Autoinstall Ubuntu Server (default)” GRUB entry and runs unattended just like bare metal.
+3. **Test the `seed.img` with a stock ISO** (useful if you want to keep Canonical’s ISO untouched):
+   ```bash
+   qemu-system-x86_64 \
+     -enable-kvm -machine q35,accel=kvm \
+     -cpu host -smp 4 -m 8G \
+     -drive file=/path/to/ubuntu-24.04-live-server-amd64.iso,media=cdrom,if=virtio \
+     -drive file=~/vm-disks/ubuntu_autoinstall.qcow2,if=virtio \
+     -drive file=/path/to/seed.img,format=raw,if=virtio \
+     -boot order=d
+   ```
+   When the GRUB menu appears, highlight *“Try or Install Ubuntu Server”*, press **`e`**, and append the following to the kernel line (right after `quiet`):
+   ```
+   autoinstall ds=nocloud\;s=/dev/vdb
+   ```
+   Press **Ctrl+X** or **F10** to boot. `/dev/vdb` is the virtio device that QEMU presents for `seed.img`; adjust the device path if you change the interface type.
+
+You can wrap either invocation with `virt-install` or `aqemu` if you want a GUI, but the raw commands above keep everything reproducible and CI-friendly.
 
 ## Next steps
 

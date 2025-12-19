@@ -8,14 +8,67 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEFAULTS_FILE="${SCRIPT_DIR}/defaults.env"
 
-DEFAULT_SUDO_USER="zmartadmin"
-DEFAULT_HOSTNAME="zmart-u24"
-DEFAULT_LUKS_PASSPHRASE="zmart-default-luks"
-
 if [ -f "$DEFAULTS_FILE" ]; then
     # shellcheck disable=SC1090
     source "$DEFAULTS_FILE"
 fi
+
+detect_primary_user() {
+    getent passwd | awk -F: '$3 >= 1000 && $1 != "nobody" {print $1; exit}'
+}
+
+PRIMARY_USER="$(detect_primary_user)"
+CURRENT_HOSTNAME="$(hostnamectl --static 2>/dev/null || hostname)"
+CURRENT_CALLER="${SUDO_USER:-$(id -un)}"
+
+if [ -z "${DEFAULT_SUDO_USER:-}" ] && [ -n "$PRIMARY_USER" ]; then
+    DEFAULT_SUDO_USER="$PRIMARY_USER"
+fi
+if [ -z "${DEFAULT_HOSTNAME:-}" ] && [ -n "$CURRENT_HOSTNAME" ]; then
+    DEFAULT_HOSTNAME="$CURRENT_HOSTNAME"
+fi
+
+create_removal_helper() {
+    local keeper="$1"
+    local target="$2"
+    local keeper_home
+    keeper_home="$(getent passwd "$keeper" | awk -F: '{print $6}')"
+    if [ -z "$keeper_home" ]; then
+        echo "Could not determine ${keeper}'s home to schedule removal of ${target}." >&2
+        return 1
+    fi
+    local script_path="${keeper_home}/remove_${target}.sh"
+    cat >"$script_path" <<EOF
+#!/bin/bash
+set -e
+sudo userdel -rf ${target}
+EOF
+    chown "$keeper:$keeper" "$script_path"
+    chmod 750 "$script_path"
+    echo "Run ~/${script_path##*/} after logging in as ${keeper} to remove ${target}."
+}
+
+maybe_remove_bootstrap_user() {
+    local target="$1"
+    local keeper="$2"
+    if [ -z "$target" ] || [ "$target" = "root" ] || [ "$target" = "$keeper" ]; then
+        return
+    fi
+    if ! id "$target" >/dev/null 2>&1; then
+        return
+    fi
+    read -p "Remove bootstrap sudo user '${target}'? [y/N]: " remove_now
+    if [[ ! "$remove_now" =~ ^[Yy]$ ]]; then
+        return
+    fi
+    if [ "$target" = "$CURRENT_CALLER" ]; then
+        echo "Cannot remove ${target} while this session is running as that user; queuing helper script for ${keeper}."
+        create_removal_helper "$keeper" "$target"
+        return
+    fi
+    userdel -rf "$target"
+    echo "Removed ${target}."
+}
 
 source "${SCRIPT_DIR}/common_bash_funcs.sh"
 
@@ -23,8 +76,9 @@ source "${SCRIPT_DIR}/common_bash_funcs.sh"
 ln -sf /bin/bash /bin/sh
 
 mod_requires_reboot="0"
-default_account="${DEFAULT_SUDO_USER:-$SUDO_USER}"
+default_account="${DEFAULT_SUDO_USER:-${SUDO_USER:-${PRIMARY_USER:-}}}"
 display_default="${default_account:-current user}"
+HOSTNAME_DISPLAY="${CURRENT_HOSTNAME:-${DEFAULT_HOSTNAME:-unknown}}"
 
 read -p "Enter username for new sudoer [leave empty to keep ${display_default}]: " admin_username
 if [ -n "$admin_username" ]; then
@@ -42,33 +96,28 @@ if [ -n "$admin_username" ]; then
     echo "created sudoer $admin_username ."
     echo "after reboot, login as $admin_username to continue setup"
 
-    if [ -n "$default_account" ] && id "$default_account" >/dev/null 2>&1; then
-        read -p "Remove default sudo user '$default_account' after first login? [y/N]: " remove_default
-        if [[ "$remove_default" =~ ^[Yy]$ ]]; then
-            first_boot_script="/home/$admin_username/first_boot.sh"
-            cat > "$first_boot_script" <<EOT
-#!/bin/bash
-set -e
-sudo userdel -rf ${default_account} >/dev/null 2>&1 || true
-EOT
-            chown "$admin_username:$admin_username" "$first_boot_script"
-            chmod 750 "$first_boot_script"
-            echo "After reboot, login as $admin_username and run ~/first_boot.sh to remove $default_account."
-        fi
-    fi
-
     read -n 1 -s -r -p "Press enter to continue..."
     echo ""
 else
     admin_username="${SUDO_USER:-$default_account}"
 fi
 
-echo "current hostname: " "$(hostname)"
-read -p "Enter new hostname [default: ${DEFAULT_HOSTNAME}], leave empty to skip: " hostname_new
+if id "$admin_username" >/dev/null 2>&1; then
+    read -p "Set/Update password for ${admin_username}? [Y/n]: " change_admin_pass || true
+    if [[ ! "$change_admin_pass" =~ ^[Nn]$ ]]; then
+        passwd "$admin_username"
+    fi
+fi
+
+maybe_remove_bootstrap_user "$default_account" "$admin_username"
+
+echo "current hostname: ${HOSTNAME_DISPLAY}"
+read -p "Enter new hostname [leave empty to keep ${HOSTNAME_DISPLAY}]: " hostname_new
 if [ -n "$hostname_new" ]; then
     mod_requires_reboot="1"
     hostnamectl set-hostname "$hostname_new"
-    echo "new hostname: " "$(hostname)"
+    CURRENT_HOSTNAME="$(hostnamectl --static 2>/dev/null || hostname)"
+    echo "new hostname: ${CURRENT_HOSTNAME}"
 fi
 
 read -p "Do you want to change the encryption passphrase? [y/N]: " enc_psswd

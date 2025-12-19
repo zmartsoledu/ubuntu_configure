@@ -7,6 +7,106 @@ fi
 
 source ./common_bash_funcs.sh
 
+install_deb_from_url() {
+	local name="$1"
+	local url="$2"
+	local tmp
+	tmp=$(mktemp --suffix=.deb)
+	if curl -fsSL "$url" -o "$tmp"; then
+		if dpkg -i "$tmp" >/dev/null 2>&1; then
+			func_print_ok_message "$name installed"
+		else
+			func_print_warn_message "Resolving dependencies for $name"
+			DEBIAN_FRONTEND=noninteractive apt-get install -f -y >/dev/null 2>&1 || true
+			if dpkg -i "$tmp" >/dev/null 2>&1; then
+				func_print_ok_message "$name installed"
+			else
+				func_print_fail_message "$name installation failed"
+			fi
+		fi
+	else
+		func_print_fail_message "Failed to download $name"
+	fi
+	rm -f "$tmp"
+}
+
+install_postman() {
+	local tmpdir
+	tmpdir=$(mktemp -d)
+	if curl -fsSL https://dl.pstmn.io/download/latest/linux64 -o "$tmpdir/postman.tar.gz"; then
+		rm -rf /opt/Postman
+		mkdir -p /opt
+		tar -xzf "$tmpdir/postman.tar.gz" -C /opt
+		chmod +x /opt/Postman/Postman
+		ln -sf /opt/Postman/Postman /usr/local/bin/postman
+		cat > /usr/share/applications/postman.desktop <<'EOF'
+[Desktop Entry]
+Name=Postman
+Comment=API development environment
+Exec=/opt/Postman/Postman
+Icon=/opt/Postman/app/resources/app/assets/icon.png
+Terminal=false
+Type=Application
+Categories=Development;
+EOF
+		chmod 644 /usr/share/applications/postman.desktop
+		func_print_ok_message "Postman installed under /opt/Postman"
+	else
+		func_print_fail_message "Failed to download Postman"
+	fi
+	rm -rf "$tmpdir"
+}
+
+install_drawio() {
+	local url
+	url=$(python3 - <<'PY'
+import json
+import sys
+import urllib.request
+try:
+	with urllib.request.urlopen("https://api.github.com/repos/jgraph/drawio-desktop/releases/latest", timeout=30) as resp:
+		data = json.load(resp)
+except Exception as exc:
+	print("", end="")
+	sys.exit(0)
+for asset in data.get("assets", []):
+	name = asset.get("name", "")
+	if name.endswith("amd64.deb"):
+		print(asset.get("browser_download_url", ""))
+		sys.exit(0)
+PY
+	)
+	if [ -n "$url" ]; then
+		install_deb_from_url "Draw.io" "$url"
+	else
+		func_print_warn_message "Could not determine Draw.io download URL"
+	fi
+}
+
+install_discord() {
+	install_deb_from_url "Discord" "https://discord.com/api/download?platform=linux&format=deb"
+}
+
+install_slack() {
+	local keyring=/etc/apt/keyrings/slack.gpg
+	local list_file=/etc/apt/sources.list.d/slack.list
+	mkdir -p /etc/apt/keyrings
+	if [ ! -f "$keyring" ]; then
+		curl -fsSL https://packagecloud.io/slacktechnologies/slack/gpgkey | gpg --dearmor | tee "$keyring" >/dev/null
+		chmod 644 "$keyring"
+	fi
+	cat > "$list_file" <<EOF
+# Slack desktop client
+deb [arch=amd64 signed-by=$keyring] https://packagecloud.io/slacktechnologies/slack/debian/ any main
+EOF
+	apt_update
+	apt_install_auto_yes slack-desktop
+}
+
+install_telegram() {
+	apt_install_auto_yes telegram-desktop
+}
+
 # Switch from netplan to NetworkManager
 netplan_used=0
 which netplan > /dev/null
@@ -71,17 +171,12 @@ apt_group_install_auto_yes "gcc-14 g++-14"
 update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-14 100
 update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-14 100
 
-# Install flatpak for snap replacements
-apt_install_auto_yes "flatpak gnome-software-plugin-flatpak"
-flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-# Install flatpak alternatives to snaps
-func_print_info_message "Installing flatpak applications..."
-flatpak install -y flathub com.getpostman.Postman 2>/dev/null || func_print_warn_message "Postman install failed or skipped"
-flatpak install -y flathub com.jgraph.drawio.desktop 2>/dev/null || func_print_warn_message "Draw.io install failed or skipped"
-flatpak install -y flathub com.discordapp.Discord 2>/dev/null || func_print_warn_message "Discord install failed or skipped"
-flatpak install -y flathub com.slack.Slack 2>/dev/null || func_print_warn_message "Slack install failed or skipped"
-flatpak install -y flathub org.telegram.desktop 2>/dev/null || func_print_warn_message "Telegram install failed or skipped"
+func_print_info_message "Installing desktop apps without snap/flatpak..."
+install_postman
+install_drawio
+install_discord
+install_slack
+install_telegram
 
 # Apps that are back in apt repos for 24.04
 apt_group_install_auto_yes "ffmpeg pdftk-java"

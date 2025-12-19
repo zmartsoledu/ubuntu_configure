@@ -7,6 +7,39 @@ fi
 
 source ./common_bash_funcs.sh
 
+install_copilot_cli() {
+	local installer_url="https://gh.io/copilot-install"
+	if command -v copilot >/dev/null 2>&1; then
+		func_print_info_message "Copilot CLI already installed, skipping"
+		return
+	fi
+	func_print_info_message "Installing GitHub Copilot CLI..."
+	if curl -fsSL "$installer_url" | PREFIX=/usr/local bash >/tmp/copilot-install.log 2>&1; then
+		func_print_ok_message "copilot CLI installed to /usr/local/bin"
+	else
+		func_print_warn_message "Copilot CLI installer failed (see /tmp/copilot-install.log)"
+	fi
+}
+
+provision_wireless_stack() {
+	func_print_info_message "Installing Wi-Fi tooling"
+	apt_group_install_auto_yes "wireless-tools wpasupplicant"
+
+	if ! dpkg -s linux-firmware >/dev/null 2>&1; then
+		apt_install_auto_yes linux-firmware
+	fi
+
+	if command -v lspci >/dev/null 2>&1 && lspci | grep -iE "(wireless|network)" | grep -qi intel; then
+		func_print_info_message "Intel Wi-Fi detected, ensuring firmware"
+		apt_install_auto_yes firmware-iwlwifi || apt_install_auto_yes linux-firmware
+	fi
+
+	func_print_info_message "Installing Bluetooth base packages"
+	apt_group_install_auto_yes "bluez bluez-tools"
+	systemctl enable bluetooth
+	systemctl start bluetooth
+}
+
 # point /bin/sh to bash
 ln -sf /bin/bash /bin/sh
 
@@ -25,6 +58,9 @@ echo "sudo update-grub" >> run_manually.sh
 ./docker.sh
 ./azure.sh
 ./groups.sh
+
+install_copilot_cli
+provision_wireless_stack
 
 # VirtualBox - check if needed for 24.04
 func_print_info_message "VirtualBox - skipped, consider alternatives (libvirt/qemu)"

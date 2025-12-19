@@ -38,7 +38,7 @@ cd pre_install
 ./configure_autoinstall.sh
 ```
 
-The script prompts for installation parameters (username, locale, timezone, LUKS passphrase, etc.), updates `user-data`/`meta-data`, and regenerates `post_install_instructions.txt` so those values travel with every build. Your answers are stored in the git-ignored `post_install/defaults_override.env` (falling back to the tracked `defaults.env` whenever an override hasn’t been created yet), giving both halves of the workflow a single, inspectable source of truth that won’t dirty your working tree.
+The script prompts for installation parameters (username, locale, timezone, LUKS passphrase, etc.), copies the pristine `user-data` into `user-data-override`, updates that override file (leaving the base file untouched), and regenerates `post_install_instructions.txt` so those values travel with every build. Your answers are stored—along with plaintext password/passphrase comments for quick reference—in the git-ignored `post_install/defaults_override.env` (the tracked `defaults.env` remains the canonical baseline that supplies future defaults), giving both halves of the workflow a single, inspectable source of truth that won’t dirty your working tree.
 
 ## Build media with one command
 
@@ -57,6 +57,7 @@ cd pre_install
 - When the unattended install finishes, the console now waits until you press **Enter** (after removing the ISO/USB) before triggering the reboot, so you never loop back into the installer by accident.
 - Need to reflash an ISO without rebuilding anything? Run `sudo ./build_media.sh --iso /path/to/existing.iso --flash-only` (the `--iso` flag is required in this mode) to jump straight to the USB selection/dd stage.
 - Every run (build or flash-only) prints the path to the defaults file in use (`defaults_override.env` when present, otherwise `defaults.env`) so you can review the values that were baked into the image.
+- When assembling the NoCloud payload, the script automatically prefers `user-data-override` (if it exists) and falls back to the pristine `user-data`, so you can inspect or reset either file independently.
 
 At boot you will see two entries: **Autoinstall Ubuntu Server (default)** and the original interactive installer as a fallback. For VM testing, pair the generated `seed.img` with the stock ISO and boot with `autoinstall ds=nocloud;s=/dev/sdX`; the payload matches the ISO exactly, so behavior stays consistent.
 

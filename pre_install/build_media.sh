@@ -91,28 +91,23 @@ cleanup() {
 trap cleanup EXIT
 
 copy_nocloud_sources() {
-    local user_data_src="${SCRIPT_DIR}/user-data"
-    if [ -f "${SCRIPT_DIR}/user-data-override" ]; then
-        user_data_src="${SCRIPT_DIR}/user-data-override"
-        echo "[i] Using customized user-data-override"
-    else
-        echo "[i] Using stock user-data"
-    fi
-
-    if [ ! -f "$user_data_src" ]; then
-        echo "EXIT[ERR]: user-data source missing. Run configure_autoinstall.sh." >&2
-        exit 1
-    fi
-
-    cp "$user_data_src" "$NOCLOUD_TMP/user-data"
-
-    local files=(meta-data post_install_instructions.txt)
+    local files=(user-data meta-data post_install_instructions.txt)
     for f in "${files[@]}"; do
-        if [ ! -f "${SCRIPT_DIR}/${f}" ]; then
+        local src="${SCRIPT_DIR}/${f}"
+        local override="${SCRIPT_DIR}/${f}-override"
+        if [ -f "$override" ]; then
+            src="$override"
+            echo "[i] Using customized ${f}-override"
+        else
+            if [ "$f" = "user-data" ]; then
+                echo "[i] Using stock user-data"
+            fi
+        fi
+        if [ ! -f "$src" ]; then
             echo "EXIT[ERR]: ${f} missing. Run configure_autoinstall.sh." >&2
             exit 1
         fi
-        cp "${SCRIPT_DIR}/${f}" "$NOCLOUD_TMP/"
+        cp "$src" "$NOCLOUD_TMP/$f"
     done
 }
 

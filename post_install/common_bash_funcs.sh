@@ -174,16 +174,23 @@ function apt_install_auto_yes() {
     local __extra_apt_opts="$2"
 
     if [ ! -z "$__package_name" ]; then
-        sudo DEBIAN_FRONTEND=noninteractive apt install -y "$__package_name" $extra_apt_opts
-	func_print_ok_fail_on_ret_code "$?" "install_apt $__package_name"
+        # place any extra apt options before the package name so flags like --no-install-recommends are applied
+        sudo DEBIAN_FRONTEND=noninteractive apt install -y $__extra_apt_opts "$__package_name"
+        func_print_ok_fail_on_ret_code "$?" "install_apt $__package_name"
     else
         func_print_info_message "install skipped for empty package name"
     fi
 }
 
 function apt_update() {
-    sudo apt-get update
-    func_print_ok_fail_on_ret_code "$?" "apt_update"
+    local tries=0
+    local rc=1
+    until [ $tries -ge 3 ]; do
+        sudo apt-get update && { rc=0; break; } || rc=$?
+        tries=$((tries+1))
+        sleep 5
+    done
+    func_print_ok_fail_on_ret_code "$rc" "apt_update"
 }
 
 function apt_upgrade() {

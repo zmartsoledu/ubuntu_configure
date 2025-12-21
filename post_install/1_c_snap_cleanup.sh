@@ -54,12 +54,6 @@ if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
 	exit 0
 fi
 
-# Stop snapd services
-print_info "Stopping snapd services..."
-systemctl stop snapd.service
-systemctl stop snapd.socket
-systemctl stop snapd.seeded.service
-
 if [ "$snap_present" -eq 1 ]; then
 	# Remove all snap packages
 	print_info "Removing snap packages..."
@@ -81,6 +75,12 @@ if [ "$snap_present" -eq 1 ]; then
 else
 	print_info "Skipping snap package removal step"
 fi
+
+# Stop snapd services (now that snaps have been removed)
+print_info "Stopping snapd services..."
+systemctl stop snapd.service || true
+systemctl stop snapd.socket || true
+systemctl stop snapd.seeded.service || true
 
 # Remove snapd package
 print_info "Removing snapd package..."

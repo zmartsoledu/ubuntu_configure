@@ -140,20 +140,27 @@ function apt_add() {
     local __repo_base_link="$1"
     local __version_name=`lsb_release -sc`
     local __arch=`dpkg --print-architecture`
-    local __repo_link="deb [arch=$__arch] $__repo_base_link $__version_name main"
-    
+    local host
+    host=$(echo "$__repo_base_link" | awk -F/ '{print $3}')
+    local keyring="/etc/apt/keyrings/${host}.gpg"
+    local repo_file="/etc/apt/sources.list.d/${host}.list"
+    local __repo_link="deb [arch=$__arch signed-by=$keyring] $__repo_base_link $__version_name main"
+
     grep -Fh "$__repo_link" /etc/apt/sources.list > /dev/null 2>&1
     if [ "$?" != "0" ]
     then
-        curl -fsSL ${__repo_base_link}/gpg > vagrant.key
-        sudo apt-key add vagrant.key >/dev/null 2>&1
-        if [ "$?" == "0" ]; then 
-            echo "Adding repo:$__repo_link"
-            sudo apt-add-repository -y "$__repo_link"
-            func_print_ok_message "repo add: $__repo_link"
+        mkdir -p /etc/apt/keyrings
+        # attempt to download gpg key and install as a keyring
+        if curl -fsSL "${__repo_base_link}/gpg" | gpg --dearmor | sudo tee "$keyring" >/dev/null 2>&1; then
+            echo "$__repo_link" | sudo tee "$repo_file" >/dev/null 2>&1
+            if [ "$?" == "0" ]; then
+                func_print_ok_message "repo add: $__repo_link"
+            else
+                func_print_fail_message "repo add: $__repo_link"
+            fi
         else
-            func_print_fail_message "repo add: $__repo_link"
-        fi      
+            func_print_fail_message "repo add (key retrieval failed): $__repo_base_link"
+        fi
     else
       func_print_info_message "repo already exists: $__repo_link"
     fi

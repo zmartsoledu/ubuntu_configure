@@ -12,10 +12,13 @@ sudo killall VirtualBox >/dev/null 2>&1
 
 distro_codename=$(cat /etc/*-release | grep "CODENAME=" | tail -n1 | sed 's@.*=\(.*\)@\1@')
 
-wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
-wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
-
-add_to_sources_list "http://download.virtualbox.org/virtualbox/debian" "contrib"
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://www.virtualbox.org/download/oracle_vbox_2016.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/virtualbox-2016.gpg >/dev/null
+curl -fsSL https://www.virtualbox.org/download/oracle_vbox.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/virtualbox.gpg >/dev/null
+chmod 644 /etc/apt/keyrings/virtualbox-2016.gpg /etc/apt/keyrings/virtualbox.gpg
+# add deb source with signed-by
+distro=$(lsb_release -sc)
+echo "deb [signed-by=/etc/apt/keyrings/virtualbox.gpg] http://download.virtualbox.org/virtualbox/debian $distro contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list >/dev/null
 
 apt_update
 echo "attempting to remove old virtualbox packages"

@@ -97,10 +97,15 @@ install_slack() {
 	fi
 	cat > "$list_file" <<EOF
 # Slack desktop client
-deb [arch=amd64 signed-by=$keyring] https://packagecloud.io/slacktechnologies/slack/debian/ any main
+deb [arch=amd64 signed-by=$keyring] https://packagecloud.io/slacktechnologies/slack/debian/ $(lsb_release -sc) main
 EOF
 	apt_update
-	apt_install_auto_yes slack-desktop
+	# If apt_update failed, skip installing slack
+	if [ $? -eq 0 ]; then
+		apt_install_auto_yes slack-desktop
+	else
+		func_print_warn_message "Skipping slack installation due to apt update failure"
+	fi
 }
 
 install_telegram() {

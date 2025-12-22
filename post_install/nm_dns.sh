@@ -5,11 +5,16 @@ if [ `id -u` != "0" ]; then
     exit -1
 fi
 
+# Only proceed if NetworkManager config exists
+if [ ! -f /etc/NetworkManager/NetworkManager.conf ]; then
+	exit 0
+fi
+
 grep 'dns=default' /etc/NetworkManager/NetworkManager.conf >/dev/null 2>&1
 if [ $? -ne 0 ]; then
 	sed -i '/\[main\]/a dns=default' /etc/NetworkManager/NetworkManager.conf
 fi
 
-systemctl disable --now systemd-resolved && \
-rm /etc/resolv.conf && \
-systemctl restart NetworkManager
+systemctl disable --now systemd-resolved 2>/dev/null || true
+rm -f /etc/resolv.conf
+systemctl restart NetworkManager 2>/dev/null || true

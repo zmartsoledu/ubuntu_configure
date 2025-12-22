@@ -122,18 +122,59 @@ if [ $? -eq 0 ]; then
 	if [ -f /etc/netplan/01-network-manager-all.yaml ]; then
 		func_print_info_message "NetworkManager already configured in netplan"
 	else
-		# Create NetworkManager netplan config
-		cat > /etc/netplan/01-network-manager-all.yaml << 'EOF'
+		# Detect first available ethernet-style interface name
+		iface=""
+		for try in eno ens enp eth en* p*; do
+			candidate=$(ls /sys/class/net 2>/dev/null | grep -E "^$try" | head -n1)
+			if [ -n "$candidate" ]; then
+				iface="$candidate"
+				break
+			fi
+		done
+		if [ -z "$iface" ]; then
+			# fallback to first non-loopback interface
+			iface=$(ls /sys/class/net 2>/dev/null | grep -v lo | head -n1)
+		fi
+		if [ -z "$iface" ]; then
+			func_print_warn_message "No network interface detected; writing minimal netplan config"
+			iface=eth0
+		fi
+		# Create NetworkManager netplan config from repo template
+		if [ -f "$(dirname "$0")/netplan_template.yaml" ]; then
+			cp "$(dirname "$0")/netplan_template.yaml" /etc/netplan/01-network-manager-all.yaml
+			sed -i "s/__IFACE__/$iface/" /etc/netplan/01-network-manager-all.yaml
+		else
+			cat > /etc/netplan/01-network-manager-all.yaml <<EOF
 network:
   version: 2
   renderer: NetworkManager
+  ethernets:
+    $iface:
+      dhcp4: true
+      dhcp6: false
+      optional: true
+      nameservers:
+        addresses: [8.8.8.8, 1.1.1.1, 8.8.4.4]
 EOF
-		# Disable old installer config
-		if [ -f /etc/netplan/00-installer-config.yaml ]; then
-			mv /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml.disabled
 		fi
+		# Set secure permissions
+		chmod 0644 /etc/netplan/01-network-manager-all.yaml || true
+		# Disable old installer config (rename with trailing underscore)
+		if [ -f /etc/netplan/00-installer-config.yaml ]; then
+			mv /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml_ || true
+		fi
+		# Install NetworkManager early so netplan apply won't fail
+		apt_update
+		apt_install_auto_yes "network-manager"
+		systemctl enable --now NetworkManager 2>/dev/null || true
+		# Make other netplan YAMLs optional by renaming with trailing underscore
+		for f in /etc/netplan/*.yaml; do
+			if [ "$f" != "/etc/netplan/01-network-manager-all.yaml" ]; then
+				mv "$f" "${f}_" || true
+			fi
+		done
 		
-		func_print_ok_message "Configured NetworkManager in netplan"
+		func_print_ok_message "Configured NetworkManager in netplan for interface $iface"
 	fi
 fi
 
@@ -219,15 +260,15 @@ if [ $netplan_used -eq 1 ]; then
 	echo "nameserver 8.8.8.8" > /run/resolvconf/resolv.conf
 	ln -sf /run/resolvconf/resolv.conf /etc/resolv.conf
 	
-	netplan apply
-	systemctl restart NetworkManager
+	netplan apply 2>/dev/null || true
+	systemctl restart NetworkManager 2>/dev/null || true
 	
 	apt_group_install_auto_yes "resolvconf"
 	sudo sed -i 's/#FallbackDNS=.*/FallbackDNS=8.8.8.8 8.8.4.4/' /etc/systemd/resolved.conf
 	
-	netplan apply
-	systemctl restart NetworkManager
-	systemctl restart systemd-resolved
+	netplan apply 2>/dev/null || true
+	systemctl restart NetworkManager 2>/dev/null || true
+	systemctl restart systemd-resolved 2>/dev/null || true
 fi
 
 opt_selection="";

@@ -7,6 +7,16 @@ fi
 
 source ./common_bash_funcs.sh
 
+# Clean up conflicting Microsoft repo entries ONCE at the start
+func_print_info_message "Cleaning up any conflicting Microsoft GPG keys and repo entries..."
+rm -f /etc/apt/sources.list.d/vscode.list.* 2>/dev/null
+rm -f /usr/share/keyrings/microsoft.gpg 2>/dev/null
+# Remove duplicate VS Code sources but keep the one we'll create
+find /etc/apt/sources.list.d/ -type f \( -name '*vscode*' -o -name '*code*' \) ! -name 'vscode.list' -delete 2>/dev/null || true
+# Remove broken Slack repo
+rm -f /etc/apt/sources.list.d/slack.list 2>/dev/null
+rm -f /etc/apt/keyrings/slack.gpg 2>/dev/null
+
 install_deb_from_url() {
 	local name="$1"
 	local url="$2"
@@ -95,12 +105,13 @@ install_discord() {
 install_slack() {
 	func_print_info_message "Installing Slack via direct download"
 	local url
-	url=$(curl -fsSL "https://slack.com/downloads/linux" | grep -oP 'https://downloads\.slack-edge\.com/releases/linux/[0-9.]+/prod/x64/slack-desktop-[0-9.]+-amd64\.deb' | head -n1)
+	# Try to get latest version from Slack downloads page
+	url=$(curl -fsSL "https://slack.com/downloads/linux" 2>/dev/null | grep -oP 'https://downloads\.slack-edge\.com/[^"]+/slack-desktop-[0-9.]+-amd64\.deb' | head -n1)
 	
 	if [ -z "$url" ]; then
-		func_print_warn_message "Could not determine latest Slack download URL from website"
-		func_print_info_message "Attempting fallback to known stable version..."
-		url="https://downloads.slack-edge.com/releases/linux/4.41.98/prod/x64/slack-desktop-4.41.98-amd64.deb"
+		func_print_warn_message "Could not scrape Slack download URL from website"
+		func_print_info_message "Trying alternative: direct latest symlink"
+		url="https://downloads.slack-edge.com/desktop-releases/linux/x64/slack-desktop-amd64.deb"
 	fi
 	
 	install_deb_from_url "Slack" "$url"
@@ -145,7 +156,6 @@ apt_update
 
 # Core development tools - NO SNAPS
 apt_group_install_auto_yes "gddrescue \
-	libgconf-2-4 \
 	gigolo \
 	gnuplot \
 	gparted \

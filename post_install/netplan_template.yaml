@@ -1,0 +1,11 @@
+# NetworkManager netplan template
+network:
+  version: 2
+  renderer: NetworkManager
+  ethernets:
+    __IFACE__:
+      dhcp4: true
+      dhcp6: false
+      optional: true
+      nameservers:
+        addresses: [8.8.8.8, 1.1.1.1, 8.8.4.4]

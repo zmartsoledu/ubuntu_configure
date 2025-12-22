@@ -38,6 +38,8 @@ provision_wireless_stack() {
 	apt_group_install_auto_yes "bluez bluez-tools"
 	systemctl enable bluetooth
 	systemctl start bluetooth
+	# Ensure DHCP client is available for manual DHCP bring-up
+	apt_install_auto_yes "isc-dhcp-client"
 }
 
 # point /bin/sh to bash

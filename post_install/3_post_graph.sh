@@ -157,8 +157,8 @@ network:
         addresses: [8.8.8.8, 1.1.1.1, 8.8.4.4]
 EOF
 		fi
-		# Set secure permissions
-		chmod 0644 /etc/netplan/01-network-manager-all.yaml || true
+		# Set secure permissions (netplan requires restrictive perms)
+		chmod 0600 /etc/netplan/01-network-manager-all.yaml || true
 		# Disable old installer config (rename with trailing underscore)
 		if [ -f /etc/netplan/00-installer-config.yaml ]; then
 			mv /etc/netplan/00-installer-config.yaml /etc/netplan/00-installer-config.yaml_ || true
@@ -266,9 +266,14 @@ if [ $netplan_used -eq 1 ]; then
 	apt_group_install_auto_yes "resolvconf"
 	sudo sed -i 's/#FallbackDNS=.*/FallbackDNS=8.8.8.8 8.8.4.4/' /etc/systemd/resolved.conf
 	
-	netplan apply 2>/dev/null || true
-	systemctl restart NetworkManager 2>/dev/null || true
-	systemctl restart systemd-resolved 2>/dev/null || true
+	# Second apply; guard NetworkManager start similarly
+	if systemctl list-unit-files | grep -q "NetworkManager.service"; then
+		netplan apply 2>/dev/null || true
+		systemctl restart NetworkManager 2>/dev/null || true
+		systemctl restart systemd-resolved 2>/dev/null || true
+	else
+		netplan generate 2>/dev/null || true
+	fi
 fi
 
 opt_selection="";

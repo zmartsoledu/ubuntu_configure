@@ -42,34 +42,28 @@ fi
 # List current snaps
 if [ "$snap_present" -eq 1 ]; then
 	print_info "Current snap packages:"
-	snap list | tee /root/snap_list_backup.txt
+	timeout 10 snap list | tee /root/snap_list_backup.txt || print_warn "snap list timed out"
 	echo ""
 else
 	print_info "No snap packages detected"
 fi
 
-read -p "Do you want to proceed with snap removal? [y/N]: " confirm
-if [ "$confirm" != "y" ] && [ "$confirm" != "Y" ]; then
-	print_info "Aborting snap removal"
-	exit 0
-fi
-
 if [ "$snap_present" -eq 1 ]; then
 	# Remove all snap packages
 	print_info "Removing snap packages..."
-	for snap in $(snap list | awk 'NR>1 {print $1}'); do
+	for snap in $(timeout 10 snap list 2>/dev/null | awk 'NR>1 {print $1}'); do
 		print_info "Removing snap: $snap"
-		snap remove --purge "$snap" 2>/dev/null || {
+		timeout 30 snap remove --purge "$snap" 2>/dev/null || {
 			print_warn "Failed to remove $snap, trying again..."
-			snap remove --purge "$snap" 2>&1
+			timeout 30 snap remove --purge "$snap" 2>&1 || print_warn "Timeout/failed removing $snap"
 		}
 	done
 
 	# Remove core snaps (order matters)
 	for core_snap in lxd core20 core22 core24 bare snapd; do
-		if snap list 2>/dev/null | grep "^$core_snap " >/dev/null; then
+		if timeout 10 snap list 2>/dev/null | grep "^$core_snap " >/dev/null; then
 			print_info "Removing core snap: $core_snap"
-			snap remove --purge "$core_snap" 2>/dev/null
+			timeout 30 snap remove --purge "$core_snap" 2>/dev/null || print_warn "Timeout/failed removing $core_snap"
 		fi
 	done
 else

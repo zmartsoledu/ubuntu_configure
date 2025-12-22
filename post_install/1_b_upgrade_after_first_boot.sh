@@ -27,6 +27,8 @@ echo "blacklist vga16fb" | sudo tee /etc/modprobe.d/novga16fb.conf > /dev/null 2
 echo "blacklist floppy" | sudo tee /etc/modprobe.d/blacklist-floppy.conf > /dev/null 2>&1
 sudo dpkg-reconfigure initramfs-tools
 
+./netplan_nm.sh || true
+
 func_print_info_message "script end `basename "$0"`"
 
 echo "rebooting due to apt-get upgrade"

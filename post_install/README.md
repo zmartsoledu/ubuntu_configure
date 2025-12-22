@@ -13,6 +13,7 @@ These scripts assume you have completed the unattended Ubuntu 24.04 installation
 2. *(After reboot, log in as the new admin; any deferred bootstrap-user removal will be handled automatically when you run 1_b.)*
 3. `1_b_upgrade_after_first_boot.sh`
    - Runs `remove_bootstrap_user.sh` automatically if it exists, then performs the full system upgrade + firmware refresh.
+   - Configures NetworkManager/netplan early via `netplan_nm.sh` (backups original configs with _ suffix for easy recovery).
 4. `1_c_snap_cleanup.sh`
    - Stops every snapd unit/socket, backs up `snap list`, purges each snap (core snaps included), removes snapd/flatpak packages, pins them at `Pin-Priority: -1`, cleans all snap/flatpak directories, deletes the PATH hook, and reloads systemd units so nothing snap-related lingers.
 5. `1_d_server_extras.sh`

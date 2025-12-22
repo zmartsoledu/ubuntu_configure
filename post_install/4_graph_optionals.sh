@@ -163,14 +163,18 @@ fi
 
 # MS Core Fonts
 apt purge -y ttf-mscorefonts-installer 2>/dev/null
-TTF_DEB_FILE="ttf-mscorefonts-installer_3.8.1_all.deb"
-wget http://ftp.de.debian.org/debian/pool/contrib/m/msttcorefonts/$TTF_DEB_FILE 2>/dev/null
+TTF_DEB_FILE="/tmp/ttf-mscorefonts-installer_3.8.1_all.deb"
+rm -f "$TTF_DEB_FILE"
+wget -O "$TTF_DEB_FILE" http://ftp.de.debian.org/debian/pool/contrib/m/msttcorefonts/ttf-mscorefonts-installer_3.8.1_all.deb 2>/dev/null
 if [ -f "$TTF_DEB_FILE" ]; then
-	apt_group_install_auto_yes "$PWD/$TTF_DEB_FILE"
-	rm -f $TTF_DEB_FILE
+	apt_group_install_auto_yes "$TTF_DEB_FILE"
+	rm -f "$TTF_DEB_FILE"
 fi
 
 apt autoremove -y
+
+# Fix any broken packages before reconfiguring libdvd-pkg
+apt-get install -f -y || true
 
 cd $SCRIPT_LOC
 chown $SUDO_USER run_manually.sh 2>/dev/null

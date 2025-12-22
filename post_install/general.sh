@@ -11,7 +11,7 @@ apt_upgrade
 apt_group_install_auto_yes  "curl \
 	vim \
 	git \
-	lsb-core tree \
+	lsb-release tree \
 	ubuntu-drivers-common \
 	bsdmainutils \
 	linux-headers-generic \

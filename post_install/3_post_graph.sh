@@ -17,26 +17,6 @@ find /etc/apt/sources.list.d/ -type f \( -name '*vscode*' -o -name '*code*' \) !
 rm -f /etc/apt/sources.list.d/slack.list 2>/dev/null
 rm -f /etc/apt/keyrings/slack.gpg 2>/dev/null
 
-# Migrate VirtualBox key from legacy trusted.gpg to modern keyrings
-if [ -f /etc/apt/trusted.gpg ]; then
-	func_print_info_message "Migrating VirtualBox GPG keys from legacy keyring..."
-	for keyid in $(apt-key --keyring /etc/apt/trusted.gpg list 2>/dev/null | grep -B1 -iE "virtualbox|oracle" | grep -oE '[A-F0-9]{8,}' || true); do
-		[ -n "$keyid" ] && apt-key --keyring /etc/apt/trusted.gpg del "$keyid" 2>/dev/null || true
-	done
-	
-	# If VirtualBox repo exists, ensure it uses signed-by
-	if [ -f /etc/apt/sources.list.d/virtualbox.list ]; then
-		if ! grep -q "signed-by=" /etc/apt/sources.list.d/virtualbox.list 2>/dev/null; then
-			func_print_info_message "Updating VirtualBox repo to use modern keyring format..."
-			mkdir -p /etc/apt/keyrings
-			curl -fsSL https://www.virtualbox.org/download/oracle_vbox.asc 2>/dev/null | gpg --dearmor | tee /etc/apt/keyrings/virtualbox.gpg >/dev/null 2>&1
-			chmod 644 /etc/apt/keyrings/virtualbox.gpg
-			distro=$(lsb_release -sc)
-			echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/virtualbox.gpg] http://download.virtualbox.org/virtualbox/debian $distro contrib" > /etc/apt/sources.list.d/virtualbox.list
-		fi
-	fi
-fi
-
 install_deb_from_url() {
 	local name="$1"
 	local url="$2"

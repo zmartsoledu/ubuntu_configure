@@ -78,9 +78,9 @@ apt_group_install_auto_yes  "curl \
 	iputils-ping \
 	python3-git \
 	python3-jinja2 \
-	libegl1-mesa \
+	libegl1-mesa-dev \
 	libsdl1.2-dev \
-	tftp \
+	tftp-hpa \
 	ruby-full"
 	
 mkdir -p /tftpboot && chmod 777 /tftpboot && chown nobody:$SUDO_USER /tftpboot

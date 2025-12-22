@@ -18,7 +18,9 @@ sudo systemctl status docker --no-pager 2>/dev/null
 
 # Install from Ubuntu repos (24.04 has recent docker)
 apt_update
-apt_group_install_auto_yes "docker.io docker-compose-plugin docker-buildx-plugin"
+apt_group_install_auto_yes "docker.io docker-compose"
+# docker-compose-plugin and docker-buildx-plugin are not available in Ubuntu 24.04 repos
+# docker-compose standalone and docker.io provide equivalent functionality
 sudo DEBIAN_FRONTEND=noninteractive apt autoremove -y
 
 # Add all sudo users to docker group

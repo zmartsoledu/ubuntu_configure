@@ -138,15 +138,41 @@ function add_to_sources_list() {
 
 function apt_add() {
     local __repo_base_link="$1"
-    local __version_name=`lsb_release -sc`
-    local __arch=`dpkg --print-architecture`
+    local __version_name
+    __version_name=$(lsb_release -sc)
+    local __arch
+    __arch=$(dpkg --print-architecture)
     local host
     host=$(echo "$__repo_base_link" | awk -F/ '{print $3}')
     local keyring="/etc/apt/keyrings/${host}.gpg"
     local repo_file="/etc/apt/sources.list.d/${host}.list"
     local __repo_link="deb [arch=$__arch signed-by=$keyring] $__repo_base_link $__version_name main"
 
-    grep -Fh "$__repo_link" /etc/apt/sources.list > /dev/null 2>&1
+    # Clean up legacy apt-key entries from /etc/apt/trusted.gpg for this host
+    if [ -f /etc/apt/trusted.gpg ]; then
+        for keyid in $(apt-key --keyring /etc/apt/trusted.gpg list 2>/dev/null | grep -B1 -i "$host" | grep -oE '[A-F0-9]{8,}' || true); do
+            [ -n "$keyid" ] && apt-key --keyring /etc/apt/trusted.gpg del "$keyid" 2>/dev/null || true
+        done
+    fi
+
+    # Remove any conflicting legacy source files for this host (without signed-by or with different signed-by)
+    for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+        [ -f "$f" ] || continue
+        if grep -q "$host" "$f" 2>/dev/null; then
+            if ! grep -q "signed-by=$keyring" "$f" 2>/dev/null; then
+                func_print_info_message "Removing conflicting legacy source: $f"
+                rm -f "$f"
+            fi
+        fi
+    done
+
+    # Also remove from main sources.list if present
+    if grep -q "$host" /etc/apt/sources.list 2>/dev/null; then
+        func_print_info_message "Removing $host entries from /etc/apt/sources.list"
+        sed -i "/$host/d" /etc/apt/sources.list 2>/dev/null || true
+    fi
+
+    grep -Fh "$__repo_link" "$repo_file" > /dev/null 2>&1
     if [ "$?" != "0" ]
     then
         mkdir -p /etc/apt/keyrings

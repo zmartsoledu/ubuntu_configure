@@ -11,7 +11,8 @@ echo "installing vagrant plugins..."
 sudo vagrant plugin install vagrant-libvirt
 sudo vagrant plugin install vagrant-vbguest
 sudo vagrant plugin install vagrant-disksize
-sudo vagrant plugin install vagrant-azure
+# vagrant-azure is deprecated and has conflicting faraday dependencies; skipped
+# sudo vagrant plugin install vagrant-azure
 
 vagrant plugin list
 

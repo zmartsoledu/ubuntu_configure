@@ -93,8 +93,17 @@ install_discord() {
 }
 
 install_slack() {
-	func_print_info_message "Installing Slack via direct download (packagecloud.io repo doesn't support noble yet)"
-	install_deb_from_url "Slack" "https://downloads.slack-edge.com/releases/linux/4.40.133/prod/x64/slack-desktop-4.40.133-amd64.deb"
+	func_print_info_message "Installing Slack via direct download"
+	local url
+	url=$(curl -fsSL "https://slack.com/downloads/linux" | grep -oP 'https://downloads\.slack-edge\.com/releases/linux/[0-9.]+/prod/x64/slack-desktop-[0-9.]+-amd64\.deb' | head -n1)
+	
+	if [ -z "$url" ]; then
+		func_print_warn_message "Could not determine latest Slack download URL from website"
+		func_print_info_message "Attempting fallback to known stable version..."
+		url="https://downloads.slack-edge.com/releases/linux/4.41.98/prod/x64/slack-desktop-4.41.98-amd64.deb"
+	fi
+	
+	install_deb_from_url "Slack" "$url"
 }
 
 install_telegram() {

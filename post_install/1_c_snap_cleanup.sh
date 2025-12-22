@@ -102,12 +102,30 @@ fi
 systemctl stop snapd.service snapd.socket snapd.seeded.service 2>/dev/null || true
 systemctl mask snapd.socket snapd.service 2>/dev/null || true
 
-# Purge snapd and clean up via apt
+# Unhold snapd in case it was previously held (so apt can purge it)
+apt-mark unhold snapd 2>/dev/null || true
+
+# Purge snapd and any reverse dependencies that block removal
 print_info "Purging snapd package via apt"
 apt-get update -y || true
-apt-get purge -y snapd || true
+
+# Remove packages that depend on snapd first
+for rdep in $(apt-cache rdepends --installed snapd 2>/dev/null | sed '1,2d' | tr -d ' '); do
+    [ -z "$rdep" ] && continue
+    print_info "Removing snapd reverse-dependency: $rdep"
+    apt-get purge -y "$rdep" 2>/dev/null || true
+done
+
+# Force remove snapd if still installed
+if dpkg -s snapd >/dev/null 2>&1; then
+    print_info "Force-removing snapd"
+    dpkg --force-remove-reinstreq --purge snapd 2>/dev/null || true
+    apt-get purge -y snapd 2>/dev/null || true
+fi
+
 apt-get autoremove -y || true
 apt-get install -fy || true
+dpkg --configure -a || true
 
 # Prevent snapd from being reinstalled accidentally
 print_info "Holding snapd package and pinning to prevent reinstallation"

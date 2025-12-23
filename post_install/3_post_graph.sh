@@ -195,6 +195,9 @@ fi
 ./mic_noise_cancelling.sh
 ./nm_dns.sh
 
+# Install Microsoft Edge (high-level wrapper invocation)
+./microsoft_edge.sh || func_print_warn_message "Microsoft Edge installation failed"
+
 
 # Ensure hostname is in /etc/hosts
 if ! grep -q "$(hostname)" /etc/hosts; then

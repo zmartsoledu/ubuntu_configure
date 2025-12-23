@@ -167,6 +167,27 @@ if [ -f /sys/class/power_supply/BAT0/charge_control_end_threshold ] 2>/dev/null;
 	func_print_ok_message "Battery charge threshold set to 80%"
 fi
 
+# Optionally install slimbookbattery via PPA
+SLIMBOOK_PPA="slimbook/slimbook"
+func_print_info_message "Attempting to add PPA: $SLIMBOOK_PPA and install slimbookbattery"
+# record whether we added the ppa
+ppa_added=0
+# check if ppa already exists
+if ! grep -h "ppa.launchpad.net/$SLIMBOOK_PPA" /etc/apt/sources.list.d/* >/dev/null 2>&1; then
+	add_ppa "$SLIMBOOK_PPA"
+	ppa_added=1
+fi
+apt_update
+apt_install_auto_yes slimbookbattery || {
+	func_print_warn_message "slimbookbattery install failed; will remove PPA if we added it"
+	if [ "$ppa_added" -eq 1 ]; then
+		# remove ppa list file(s)
+		rm -f /etc/apt/sources.list.d/*slimbook* 2>/dev/null || true
+		apt_update
+		func_print_info_message "Removed slimbook PPA due to install failure"
+	fi
+}
+
 # Disable USB autosuspend for problematic devices (uncomment if needed)
 # echo 'ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="XXXX", ATTR{idProduct}=="YYYY", ATTR{power/autosuspend}="-1"' > /etc/udev/rules.d/50-usb-power.rules
 

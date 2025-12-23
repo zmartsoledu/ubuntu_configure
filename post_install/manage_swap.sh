@@ -73,10 +73,14 @@ else
   swapon "$SWAP_FILE" || { func_print_fail_message "Failed to swapon"; exit 1; }
 fi
 
-# Ensure /etc/fstab contains the swapfile entry
-if ! grep -q "^${SWAP_FILE} " /etc/fstab 2>/dev/null; then
-  echo "${SWAP_FILE} none swap sw 0 0" >> /etc/fstab
-  func_print_info_message "/etc/fstab updated with swapfile entry"
+# Ensure /etc/fstab contains the swapfile entry (match by start of line)
+if grep -q "^$(printf '%s' "$SWAP_FILE" | sed 's/[][^$.*/\\]/\\&/g')[[:space:]]" /etc/fstab 2>/dev/null; then
+  func_print_info_message "/etc/fstab already contains an entry for $SWAP_FILE; leaving it unchanged"
+else
+  # Append exact tab-separated entry as requested: /swap.img	none	swap	sw	0	0 (but with current path)
+  printf '%s	%s	%s	%s	%s	%s
+' "$SWAP_FILE" none swap sw 0 0 >> /etc/fstab
+  func_print_info_message "/etc/fstab updated with swapfile entry: $SWAP_FILE\tnone\tswap\tsw\t0\t0"
 fi
 
 func_print_info_message "Swap is configured: $(swapon --show --noheadings || true)"

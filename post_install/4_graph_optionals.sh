@@ -117,6 +117,7 @@ clamav-daemon \
 clamtk \
 safeeyes \
 gnome-shell-extension-manager \
+cpupower-gui \
 apt-transport-tor"
 
 # Firefox from Mozilla PPA (to avoid snap)

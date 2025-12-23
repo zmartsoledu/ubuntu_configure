@@ -121,7 +121,7 @@ apt-transport-tor"
 
 # Firefox from Mozilla PPA (to avoid snap)
 func_print_info_message "Setting up Firefox from Mozilla PPA..."
-add-apt-repository -y ppa:mozillateam/ppa
+add_ppa mozillateam/ppa
 cat > /etc/apt/preferences.d/mozilla-firefox << 'EOF'
 Package: *
 Pin: release o=LP-PPA-mozillateam

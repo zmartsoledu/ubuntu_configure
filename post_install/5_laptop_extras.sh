@@ -169,7 +169,7 @@ fi
 
 # Optionally install slimbookbattery via PPA
 SLIMBOOK_PPA="slimbook/slimbook"
-func_print_info_message "Attempting to add PPA: $SLIMBOOK_PPA and install slimbookbattery"
+func_print_info_message "Attempting to add PPA: $SLIMBOOK_PPA and install slimbook"
 # record whether we added the ppa
 ppa_added=0
 # check if ppa already exists

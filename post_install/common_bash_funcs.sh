@@ -68,6 +68,27 @@ function func_install_latest_deb_from_github() {
 	fi
 }
 
+function check_and_cleanup_ppas() {
+    # Run apt update and detect broken PPAs, then remove their source files
+    func_print_info_message "Checking PPAs for broken entries..."
+    local tmpfile
+    tmpfile=$(mktemp)
+    sudo apt-get update 2>&1 | tee "$tmpfile" >/dev/null
+    # Extract hosts from error lines (404, NO_PUBKEY, etc.)
+    local broken_hosts
+    broken_hosts=$(grep -E "does not have a Release|NO_PUBKEY|404" "$tmpfile" | grep -oP "https?://[^/\s]+" | awk -F/ '{print $3}' | sort -u || true)
+    for h in $broken_hosts; do
+        for f in /etc/apt/sources.list.d/*; do
+            [ -f "$f" ] || continue
+            if grep -q "$h" "$f" 2>/dev/null; then
+                func_print_warn_message "Removing broken source $f referencing $h"
+                rm -f "$f" 2>/dev/null || true
+            fi
+        done
+    done
+    rm -f "$tmpfile"
+}
+
 function add_ppa() {
   local __ppa_name=""
 
@@ -81,6 +102,8 @@ function add_ppa() {
             echo "Adding ppa:$__ppa_name_to_check"
             sudo add-apt-repository -y ppa:$__ppa_name_to_check
             func_print_ok_message "add_ppa: $__ppa_name_to_check"
+            # Cleanup any broken PPAs after adding
+            check_and_cleanup_ppas
         else
             func_print_fail_message "add_ppa: $__ppa_name_to_check"
         fi

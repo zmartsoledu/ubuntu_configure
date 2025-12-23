@@ -82,7 +82,8 @@ apt_group_install_auto_yes  "curl \
 	libegl1-mesa-dev \
 	libsdl1.2-dev \
 	tftp-hpa \
-	htop
+	htop \
+	cpufrequtils \
 	ruby-full"
 	
 mkdir -p /tftpboot && chmod 777 /tftpboot && chown nobody:$SUDO_USER /tftpboot

@@ -24,4 +24,7 @@ apt --fix-broken install -y || true
 rm -f google-chrome-stable_current_amd64.deb
 cd -
 
+# Install Microsoft Edge as well
+./microsoft_edge.sh || func_print_warn_message "Microsoft Edge installation failed"
+
 func_print_info_message "script end `basename "$0"`"

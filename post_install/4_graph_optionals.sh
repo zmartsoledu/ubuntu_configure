@@ -132,6 +132,8 @@ Pin-Priority: -1
 EOF
 apt_update
 apt_install_auto_yes firefox
+# Also install Microsoft Edge
+./microsoft_edge.sh || func_print_warn_message "Microsoft Edge installation failed"
 
 # Tor browser (optional)
 if false; then

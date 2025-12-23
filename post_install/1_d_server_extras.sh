@@ -67,6 +67,9 @@ provision_wireless_stack
 # Configure NetworkManager/netplan after wireless stack is ready
 ./netplan_nm.sh || true
 
+# Manage swap size to match physical RAM
+./manage_swap.sh || func_print_warn_message "manage_swap.sh failed; please check manually"
+
 # VirtualBox - check if needed for 24.04
 func_print_info_message "VirtualBox - skipped, consider alternatives (libvirt/qemu)"
 # ./virtualbox.sh

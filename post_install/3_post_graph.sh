@@ -160,6 +160,7 @@ apt_group_install_auto_yes "gddrescue \
 	sqlitebrowser \
 	openconnect \
 	network-manager \
+	gedit \
 	network-manager-openconnect \
 	network-manager-openconnect-gnome"
 

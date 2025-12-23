@@ -161,6 +161,7 @@ apt_group_install_auto_yes "gddrescue \
 	openconnect \
 	network-manager \
 	gedit \
+	cheese \
 	network-manager-openconnect \
 	network-manager-openconnect-gnome"
 

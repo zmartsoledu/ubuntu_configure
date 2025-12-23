@@ -26,6 +26,7 @@ apt_group_install_auto_yes  "curl \
 	git mercurial \
 	subversion \
 	git-svn \
+	git-lfs \
 	doxygen \
 	build-essential \
 	make \

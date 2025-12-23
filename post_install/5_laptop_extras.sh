@@ -37,6 +37,12 @@ apt_group_install_auto_yes "tlp tlp-rdw powertop"
 systemctl enable tlp
 systemctl start tlp
 
+# Install and enable power-profiles-daemon
+print_info "Installing power-profiles-daemon..."
+apt_install_auto_yes power-profiles-daemon
+sudo systemctl enable --now power-profiles-daemon
+func_print_ok_message "power-profiles-daemon enabled"
+
 # Configure TLP for balanced power/performance
 if [ ! -f /etc/tlp.conf.backup ]; then
 	cp /etc/tlp.conf /etc/tlp.conf.backup

@@ -17,40 +17,54 @@ if [ $? -eq 0 ]; then
 	if [ -f /etc/netplan/01-network-manager-all.yaml ]; then
 		func_print_info_message "NetworkManager already configured in netplan"
 	else
-		# Detect first available ethernet-style interface name
-		iface=""
+		# Detect ethernet and wireless interfaces
+		eth_iface=""
 		for try in eno ens enp eth en* p*; do
 			candidate=$(ls /sys/class/net 2>/dev/null | grep -E "^$try" | head -n1)
 			if [ -n "$candidate" ]; then
-				iface="$candidate"
+				eval eth_iface="$candidate"
 				break
 			fi
 		done
-		if [ -z "$iface" ]; then
-			# fallback to first non-loopback interface
-			iface=$(ls /sys/class/net 2>/dev/null | grep -v lo | head -n1)
+		# fallback to first non-loopback if no ethernet detected
+		if [ -z "$eth_iface" ]; then
+			eth_iface=$(ls /sys/class/net 2>/dev/null | grep -v lo | grep -v -E '^(lo|sit|tun|tap|docker|veth|br|virbr|vmnet)' | head -n1)
 		fi
-		if [ -z "$iface" ]; then
-			func_print_warn_message "No network interface detected; writing minimal netplan config"
-			iface=eth0
-		fi
-		# Create NetworkManager netplan config from repo template
-		if [ -f "$(dirname "$0")/netplan_template.yaml" ]; then
-			cp "$(dirname "$0")/netplan_template.yaml" /etc/netplan/01-network-manager-all.yaml
-			sed -i "s/__IFACE__/$iface/" /etc/netplan/01-network-manager-all.yaml
+		# Collect wifi interfaces (presence of wireless dir)
+		wifi_ifaces=""
+		for i in $(ls /sys/class/net 2>/dev/null); do
+			if [ -d "/sys/class/net/$i/wireless" ]; then
+				wifi_ifaces="$wifi_ifaces $i"
+			fi
+		done
+		# Build netplan file from templates
+		base_template="$(dirname "$0")/netplan_base.yaml"
+		eth_template="$(dirname "$0")/netplan_template.yaml"
+		wifi_template="$(dirname "$0")/netplan_wifi_template.yaml"
+		# Start with base template; do not fall back to heredoc if missing
+		if [ -f "$base_template" ]; then
+			cp "$base_template" /etc/netplan/01-network-manager-all.yaml
 		else
-			cat > /etc/netplan/01-network-manager-all.yaml <<EOF
-network:
-  version: 2
-  renderer: NetworkManager
-  ethernets:
-    $iface:
-      dhcp4: true
-      dhcp6: false
-      optional: true
-      nameservers:
-        addresses: [8.8.8.8, 1.1.1.1, 8.8.4.4]
-EOF
+			func_print_fail_message "Netplan base template missing: $base_template. Skipping netplan generation."
+			func_print_info_message "Create and check in netplan_base.yaml, netplan_template.yaml, netplan_wifi_template.yaml and re-run."
+			exit 0
+		fi
+		# Append ethernet fragment if present
+		if [ -n "$eth_iface" ] && [ -f "$eth_template" ]; then
+			cat "$eth_template" >> /etc/netplan/01-network-manager-all.yaml
+			sed -i "s/__IFACE__/$eth_iface/" /etc/netplan/01-network-manager-all.yaml || true
+		fi
+		# Append wifi fragment(s) if present
+		if [ -n "$(echo $wifi_ifaces | xargs)" ] && [ -f "$wifi_template" ]; then
+			# Add wifis block header if not already present
+			if ! grep -q "^  wifis:" /etc/netplan/01-network-manager-all.yaml; then
+				echo "  wifis:" >> /etc/netplan/01-network-manager-all.yaml
+			fi
+			for wifi in $wifi_ifaces; do
+				# append a per-iface wifi fragment and replace placeholder
+				cat "$wifi_template" >> /etc/netplan/01-network-manager-all.yaml
+				sed -i "s/__WIFI_IFACE__/$wifi/" /etc/netplan/01-network-manager-all.yaml || true
+			done
 		fi
 		# Set secure permissions (netplan requires restrictive perms)
 		chmod 0600 /etc/netplan/01-network-manager-all.yaml || true

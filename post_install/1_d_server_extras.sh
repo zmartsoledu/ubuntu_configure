@@ -64,6 +64,9 @@ echo "sudo update-grub" >> run_manually.sh
 install_copilot_cli
 provision_wireless_stack
 
+# Configure NetworkManager/netplan after wireless stack is ready
+./netplan_nm.sh || true
+
 # VirtualBox - check if needed for 24.04
 func_print_info_message "VirtualBox - skipped, consider alternatives (libvirt/qemu)"
 # ./virtualbox.sh

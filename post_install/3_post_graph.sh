@@ -14,8 +14,6 @@ rm -f /usr/share/keyrings/microsoft.gpg 2>/dev/null
 # Remove duplicate VS Code sources but keep the one we'll create
 find /etc/apt/sources.list.d/ -type f \( -name '*vscode*' -o -name '*code*' \) ! -name 'vscode.list' -delete 2>/dev/null || true
 # Remove broken Slack repo
-rm -f /etc/apt/sources.list.d/slack.list 2>/dev/null
-rm -f /etc/apt/keyrings/slack.gpg 2>/dev/null
 
 install_deb_from_url() {
 	local name="$1"
@@ -102,21 +100,6 @@ install_discord() {
 	install_deb_from_url "Discord" "https://discord.com/api/download?platform=linux&format=deb"
 }
 
-install_slack() {
-	func_print_info_message "Installing Slack via direct download"
-	local url
-	# Try to get latest version from Slack downloads page
-	url=$(curl -fsSL "https://slack.com/downloads/linux" 2>/dev/null | grep -oP 'https://downloads\.slack-edge\.com/[^"]+/slack-desktop-[0-9.]+-amd64\.deb' | head -n1)
-	
-	if [ -z "$url" ]; then
-		func_print_warn_message "Could not scrape Slack download URL from website"
-		func_print_info_message "Trying alternative: direct latest symlink"
-		url="https://downloads.slack-edge.com/desktop-releases/linux/x64/slack-desktop-amd64.deb"
-	fi
-	
-	install_deb_from_url "Slack" "$url"
-}
-
 install_telegram() {
 	func_print_info_message "Installing Telegram via direct download"
 	local tmpdir
@@ -146,11 +129,6 @@ EOF
 	rm -rf "$tmpdir"
 }
 
-# NetworkManager/netplan actions extracted to netplan_nm.sh
-# Run it here for compatibility; it's idempotent so safe to call
-if [ -x "$(dirname "$0")/netplan_nm.sh" ]; then
-	"$(dirname "$0")/netplan_nm.sh" || true
-fi
 
 apt_update
 
@@ -194,7 +172,6 @@ func_print_info_message "Installing desktop apps without snap/flatpak..."
 install_postman
 install_drawio
 install_discord
-install_slack
 install_telegram
 
 # Apps that are back in apt repos for 24.04
@@ -217,6 +194,7 @@ fi
 ./sensors.sh
 ./mic_noise_cancelling.sh
 ./nm_dns.sh
+
 
 # Ensure hostname is in /etc/hosts
 if ! grep -q "$(hostname)" /etc/hosts; then

@@ -20,7 +20,6 @@ if [ -z "$INSTALL_DIR" ]; then
     USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
     INSTALL_DIR="${USER_HOME}/Anaconda"
 fi
-echo "$INSTALL_DIR"
 
 func_print_info_message "Conda target directory: ${INSTALL_DIR}"
 

@@ -1,74 +1,188 @@
 #!/bin/bash
 
-if [ `id -u` != "0" ]; then
-	echo "EXIT[ERR]: need to run as root, exiting"
-	exit -1
+if [ "$(id -u)" != "0" ]; then
+    echo "EXIT[ERR]: need to run as root, exiting"
+    exit -1
 fi
 
-source ./common_bash_funcs.sh
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+DEFAULTS_BASE="${SCRIPT_DIR}/defaults.env"
+DEFAULTS_OVERRIDE="${SCRIPT_DIR}/defaults_override.env"
+REMOVE_SCRIPT_PATH="${SCRIPT_DIR}/remove_bootstrap_user.sh"
+
+if [ -f "$DEFAULTS_OVERRIDE" ]; then
+    DEFAULTS_FILE="$DEFAULTS_OVERRIDE"
+elif [ -f "$DEFAULTS_BASE" ]; then
+    DEFAULTS_FILE="$DEFAULTS_BASE"
+else
+    echo "EXIT[ERR]: Expected ${DEFAULTS_OVERRIDE} or ${DEFAULTS_BASE} for default values." >&2
+    exit 1
+fi
+
+# shellcheck disable=SC1090
+source "$DEFAULTS_FILE"
+
+detect_primary_user() {
+    getent passwd | awk -F: '$3 >= 1000 && $1 != "nobody" {print $1; exit}'
+}
+
+PRIMARY_USER="$(detect_primary_user)"
+CURRENT_HOSTNAME="$(hostnamectl --static 2>/dev/null || hostname)"
+CURRENT_CALLER="${SUDO_USER:-$(id -un)}"
+
+if [ -z "${DEFAULT_SUDO_USER:-}" ] && [ -n "$PRIMARY_USER" ]; then
+    DEFAULT_SUDO_USER="$PRIMARY_USER"
+fi
+if [ -z "${DEFAULT_HOSTNAME:-}" ] && [ -n "$CURRENT_HOSTNAME" ]; then
+    DEFAULT_HOSTNAME="$CURRENT_HOSTNAME"
+fi
+
+create_removal_helper() {
+    local keeper="$1"
+    local target="$2"
+    rm -f "$REMOVE_SCRIPT_PATH"
+    cat >"$REMOVE_SCRIPT_PATH" <<EOF
+#!/bin/bash
+set -euo pipefail
+if [ "\$(id -u)" != "0" ]; then
+    echo "remove_bootstrap_user.sh must be run as root" >&2
+    exit 1
+fi
+TARGET_USER="${target}"
+if id "\${TARGET_USER}" >/dev/null 2>&1; then
+    echo "Removing bootstrap sudo user \${TARGET_USER}..."
+    userdel -rf "\${TARGET_USER}"
+    echo "Removed \${TARGET_USER}."
+else
+    echo "Bootstrap sudo user '\${TARGET_USER}' not found; nothing to remove."
+fi
+EOF
+    chmod 750 "$REMOVE_SCRIPT_PATH"
+    chown "$keeper:$keeper" "$REMOVE_SCRIPT_PATH" 2>/dev/null || true
+    echo "Saved removal helper $(basename "$REMOVE_SCRIPT_PATH"). It will be invoked automatically by 1_b_upgrade_after_first_boot.sh or you can run it manually as ${keeper}."
+}
+
+maybe_remove_bootstrap_user() {
+    local target="$1"
+    local keeper="$2"
+    if [ -z "$target" ] || [ "$target" = "root" ] || [ "$target" = "$keeper" ]; then
+        return
+    fi
+    if ! id "$target" >/dev/null 2>&1; then
+        return
+    fi
+    read -p "Remove bootstrap sudo user '${target}'? [y/N]: " remove_now
+    if [[ ! "$remove_now" =~ ^[Yy]$ ]]; then
+        return
+    fi
+    if [ "$target" = "$CURRENT_CALLER" ]; then
+        echo "Cannot remove ${target} while this session is running as that user; queuing helper script for ${keeper}."
+        create_removal_helper "$keeper" "$target"
+        return
+    fi
+    userdel -rf "$target"
+    echo "Removed ${target}."
+}
+
+source "${SCRIPT_DIR}/common_bash_funcs.sh"
 
 # point /bin/sh to bash
 ln -sf /bin/bash /bin/sh
 
 mod_requires_reboot="0"
-read -p "Enter username for new sudoer, leave empty to skip: "  admin_username
-if [ `echo $admin_username | wc -m` -gt '4' ]; then
-	mod_requires_reboot="1"
-	UID_OPT=""
-	# if uid 1000 is free, make sure that we use it
-	getent passwd 1000 >/dev/null 2>&1
-	if [ "$?" != "0" ]; then
-		UID_OPT="--uid 1000"
-	fi
+default_account="${DEFAULT_SUDO_USER:-${SUDO_USER:-${PRIMARY_USER:-}}}"
+display_default="${default_account:-current user}"
+HOSTNAME_DISPLAY="${CURRENT_HOSTNAME:-${DEFAULT_HOSTNAME:-unknown}}"
 
-	adduser $UID_OPT --gecos "" $admin_username
-	usermod -aG sudo $admin_username
+read -p "Enter username for new sudoer [leave empty to keep ${display_default}]: " admin_username
+if [ -n "$admin_username" ]; then
+    mod_requires_reboot="1"
+    UID_OPT=""
+    # if uid 1000 is free, make sure that we use it
+    getent passwd 1000 >/dev/null 2>&1
+    if [ "$?" != "0" ]; then
+        UID_OPT="--uid 1000"
+    fi
 
-	echo "created sudoer $admin_username ."
-	echo "after reboot, login as $admin_username and run the /home/$admin_username/first_boot.sh script"
-	#echo "sudo passwd $admin_username" > /home/$admin_username/first_boot.sh
-	echo "sudo userdel -rf $SUDO_USER > /dev/null 2>&1" >> /home/$admin_username/first_boot.sh
-	chmod 755 /home/$admin_username/first_boot.sh
+    adduser $UID_OPT --gecos "" "$admin_username"
+    usermod -aG sudo "$admin_username"
 
-	read -n 1 -s -r -p "Press enter to continue..."
-	echo ""
+    echo "created sudoer $admin_username ."
+    echo "after reboot, login as $admin_username to continue setup"
+
+    read -n 1 -s -r -p "Press enter to continue..."
+    echo ""
 else
-	admin_username=$SUDO_USER
+    admin_username="${SUDO_USER:-$default_account}"
 fi
 
-echo "current hostname: " `hostname`
-read -p "Enter new hostname, leave empty to skip: "  hostname_new
-if [ `echo $hostname_new | wc -m` -gt '4' ]; then
-	mod_requires_reboot="1"
-	hostnamectl set-hostname $hostname_new
-	echo "new hostname: " `hostname`
+if id "$admin_username" >/dev/null 2>&1; then
+    read -p "Set/Update password for ${admin_username}? [Y/n]: " change_admin_pass || true
+    if [[ ! "$change_admin_pass" =~ ^[Nn]$ ]]; then
+        passwd "$admin_username"
+    fi
 fi
 
-read -p "Do you want to change the encryption passphrase?[y/N]: "  enc_psswd
-if [ "$enc_psswd" == "y" ] || [ "$enc_psswd" == "Y" ]; then
-	mod_requires_reboot="1"
-	disk_suffix=`cat /etc/crypttab | grep -Eo "^sd[a-z][0-9]{1,2}" | head -n1`
-	disk_path="/dev/""${disk_suffix}"
-	if [ -b "$disk_path" ]; then
-		sudo cryptsetup luksAddKey "${disk_path}"
-		if [ $? -eq '0' ]; then
-			echo "ubuntu" | sudo cryptsetup luksRemoveKey "${disk_path}" >/dev/null 2>&1
-			if [ "$?" != "0" ]; then
-				echo "enter the old encryption passphrase for removal"
-				sudo cryptsetup luksRemoveKey "${disk_path}"
-			fi
-		fi
-	fi
+maybe_remove_bootstrap_user "$default_account" "$admin_username"
+
+echo "current hostname: ${HOSTNAME_DISPLAY}"
+read -p "Enter new hostname [leave empty to keep ${HOSTNAME_DISPLAY}]: " hostname_new
+if [ -n "$hostname_new" ]; then
+    mod_requires_reboot="1"
+    hostnamectl set-hostname "$hostname_new"
+    CURRENT_HOSTNAME="$(hostnamectl --static 2>/dev/null || hostname)"
+    echo "new hostname: ${CURRENT_HOSTNAME}"
+fi
+
+read -p "Do you want to change the encryption passphrase? [y/N]: " enc_psswd
+if [[ "$enc_psswd" =~ ^[Yy]$ ]]; then
+    mod_requires_reboot="1"
+    disk_suffix=$(grep -Eo "^sd[a-z][0-9]{1,2}" /etc/crypttab | head -n1)
+    disk_path="/dev/${disk_suffix}"
+    if [ -b "$disk_path" ]; then
+        sudo cryptsetup luksAddKey "$disk_path"
+        if [ $? -eq "0" ]; then
+            if [ -n "$DEFAULT_LUKS_PASSPHRASE" ]; then
+                printf '%s\n' "$DEFAULT_LUKS_PASSPHRASE" | sudo cryptsetup luksRemoveKey "$disk_path" >/dev/null 2>&1
+                if [ "$?" != "0" ]; then
+                    echo "enter the old encryption passphrase for removal"
+                    sudo cryptsetup luksRemoveKey "$disk_path"
+                fi
+            else
+                echo "enter the old encryption passphrase for removal"
+                sudo cryptsetup luksRemoveKey "$disk_path"
+            fi
+        fi
+    fi
 fi
 
 sudo ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
 
-func_print_info_message "script end `basename "$0"`"
+AUTO_DECRYPT_SCRIPT=""
+for candidate in "${SCRIPT_DIR}/../u24.04_migration/luks_autounlock.sh" "${SCRIPT_DIR}/luks_autounlock.sh"; do
+    if [ -x "$candidate" ]; then
+        AUTO_DECRYPT_SCRIPT="$candidate"
+        break
+    fi
+done
 
-if [ "${mod_requires_reboot}" == "1" ]; then
-	echo "rebooting due to username/psswd mods..."
-	sleep 3
-	custom_reboot
+if [ -n "$AUTO_DECRYPT_SCRIPT" ]; then
+    read -p "Configure automatic LUKS decryption now with $(basename "$AUTO_DECRYPT_SCRIPT")? [y/N]: " auto_unlock
+    if [[ "$auto_unlock" =~ ^[Yy]$ ]]; then
+        "$AUTO_DECRYPT_SCRIPT"
+    else
+        func_print_info_message "Run $AUTO_DECRYPT_SCRIPT later to enable USB/YubiKey auto-unlock."
+    fi
+else
+    func_print_info_message "Auto-unlock helper not found. Copy luks_autounlock.sh locally to enable USB/YubiKey unlock later."
+fi
+
+func_print_info_message "script end $(basename "$0")"
+
+if [ "$mod_requires_reboot" == "1" ]; then
+    echo "rebooting due to username/psswd mods..."
+    sleep 3
+    custom_reboot
 fi
 
 exit 0

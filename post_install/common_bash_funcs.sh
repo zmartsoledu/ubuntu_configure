@@ -68,6 +68,27 @@ function func_install_latest_deb_from_github() {
 	fi
 }
 
+function check_and_cleanup_ppas() {
+    # Run apt update and detect broken PPAs, then remove their source files
+    func_print_info_message "Checking PPAs for broken entries..."
+    local tmpfile
+    tmpfile=$(mktemp)
+    sudo apt-get update 2>&1 | tee "$tmpfile" >/dev/null
+    # Extract hosts from error lines (404, NO_PUBKEY, etc.)
+    local broken_hosts
+    broken_hosts=$(grep -E "does not have a Release|NO_PUBKEY|404" "$tmpfile" | grep -oP "https?://[^/\s]+" | awk -F/ '{print $3}' | sort -u || true)
+    for h in $broken_hosts; do
+        for f in /etc/apt/sources.list.d/*; do
+            [ -f "$f" ] || continue
+            if grep -q "$h" "$f" 2>/dev/null; then
+                func_print_warn_message "Removing broken source $f referencing $h"
+                rm -f "$f" 2>/dev/null || true
+            fi
+        done
+    done
+    rm -f "$tmpfile"
+}
+
 function add_ppa() {
   local __ppa_name=""
 
@@ -81,6 +102,8 @@ function add_ppa() {
             echo "Adding ppa:$__ppa_name_to_check"
             sudo add-apt-repository -y ppa:$__ppa_name_to_check
             func_print_ok_message "add_ppa: $__ppa_name_to_check"
+            # Cleanup any broken PPAs after adding
+            check_and_cleanup_ppas
         else
             func_print_fail_message "add_ppa: $__ppa_name_to_check"
         fi
@@ -138,22 +161,55 @@ function add_to_sources_list() {
 
 function apt_add() {
     local __repo_base_link="$1"
-    local __version_name=`lsb_release -sc`
-    local __arch=`dpkg --print-architecture`
-    local __repo_link="deb [arch=$__arch] $__repo_base_link $__version_name main"
-    
-    grep -Fh "$__repo_link" /etc/apt/sources.list > /dev/null 2>&1
+    local __version_name
+    __version_name=$(lsb_release -sc)
+    local __arch
+    __arch=$(dpkg --print-architecture)
+    local host
+    host=$(echo "$__repo_base_link" | awk -F/ '{print $3}')
+    local keyring="/etc/apt/keyrings/${host}.gpg"
+    local repo_file="/etc/apt/sources.list.d/${host}.list"
+    local __repo_link="deb [arch=$__arch signed-by=$keyring] $__repo_base_link $__version_name main"
+
+    # Clean up legacy apt-key entries from /etc/apt/trusted.gpg for this host
+    if [ -f /etc/apt/trusted.gpg ]; then
+        for keyid in $(apt-key --keyring /etc/apt/trusted.gpg list 2>/dev/null | grep -B1 -i "$host" | grep -oE '[A-F0-9]{8,}' || true); do
+            [ -n "$keyid" ] && apt-key --keyring /etc/apt/trusted.gpg del "$keyid" 2>/dev/null || true
+        done
+    fi
+
+    # Remove any conflicting legacy source files for this host (without signed-by or with different signed-by)
+    for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+        [ -f "$f" ] || continue
+        if grep -q "$host" "$f" 2>/dev/null; then
+            if ! grep -q "signed-by=$keyring" "$f" 2>/dev/null; then
+                func_print_info_message "Removing conflicting legacy source: $f"
+                rm -f "$f"
+            fi
+        fi
+    done
+
+    # Also remove from main sources.list if present
+    if grep -q "$host" /etc/apt/sources.list 2>/dev/null; then
+        func_print_info_message "Removing $host entries from /etc/apt/sources.list"
+        sed -i "/$host/d" /etc/apt/sources.list 2>/dev/null || true
+    fi
+
+    grep -Fh "$__repo_link" "$repo_file" > /dev/null 2>&1
     if [ "$?" != "0" ]
     then
-        curl -fsSL ${__repo_base_link}/gpg > vagrant.key
-        sudo apt-key add vagrant.key >/dev/null 2>&1
-        if [ "$?" == "0" ]; then 
-            echo "Adding repo:$__repo_link"
-            sudo apt-add-repository -y "$__repo_link"
-            func_print_ok_message "repo add: $__repo_link"
+        mkdir -p /etc/apt/keyrings
+        # attempt to download gpg key and install as a keyring
+        if curl -fsSL "${__repo_base_link}/gpg" | gpg --dearmor | sudo tee "$keyring" >/dev/null 2>&1; then
+            echo "$__repo_link" | sudo tee "$repo_file" >/dev/null 2>&1
+            if [ "$?" == "0" ]; then
+                func_print_ok_message "repo add: $__repo_link"
+            else
+                func_print_fail_message "repo add: $__repo_link"
+            fi
         else
-            func_print_fail_message "repo add: $__repo_link"
-        fi      
+            func_print_fail_message "repo add (key retrieval failed): $__repo_base_link"
+        fi
     else
       func_print_info_message "repo already exists: $__repo_link"
     fi
@@ -174,34 +230,23 @@ function apt_install_auto_yes() {
     local __extra_apt_opts="$2"
 
     if [ ! -z "$__package_name" ]; then
-        sudo DEBIAN_FRONTEND=noninteractive apt install -y "$__package_name" $extra_apt_opts
-	func_print_ok_fail_on_ret_code "$?" "install_apt $__package_name"
+        # place any extra apt options before the package name so flags like --no-install-recommends are applied
+        sudo DEBIAN_FRONTEND=noninteractive apt install -y $__extra_apt_opts "$__package_name"
+        func_print_ok_fail_on_ret_code "$?" "install_apt $__package_name"
     else
         func_print_info_message "install skipped for empty package name"
     fi
 }
 
-function snap_group_install() {
-    local __snap_package_list="$1"
-    local __extra_snap_opts="$2"
-
-    local __snap_pkg_to_inst=""
-    for __snap_pkg_to_inst in $__snap_package_list; do
-        snap_install "$__snap_pkg_to_inst" "$__extra_snap_opts"
-    done
-}
-
-function snap_install() {
-    local __snap_pkg_name="$1"
-    local __snap_opts="$2"
-
-    sudo snap install "$__snap_pkg_name" $__snap_opts
-    func_print_ok_fail_on_ret_code "$?" "install_snap $__snap_pkg_name $__snap_opts"
-}
-
 function apt_update() {
-    sudo apt-get update
-    func_print_ok_fail_on_ret_code "$?" "apt_update"
+    local tries=0
+    local rc=1
+    until [ $tries -ge 3 ]; do
+        sudo apt-get update && { rc=0; break; } || rc=$?
+        tries=$((tries+1))
+        sleep 5
+    done
+    func_print_ok_fail_on_ret_code "$rc" "apt_update"
 }
 
 function apt_upgrade() {

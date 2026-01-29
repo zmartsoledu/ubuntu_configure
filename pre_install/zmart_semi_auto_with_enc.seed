@@ -1,3 +1,0 @@
-d-i preseed/include string zmart_main.seed zmart_disk_enc.seed
-
-

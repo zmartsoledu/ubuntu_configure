@@ -1,0 +1,33 @@
+========================================
+Post-install Checklist
+========================================
+
+1. Clone the automation repository:
+   git clone https://github.com/zmartsoledu/ubuntu_configure.git ~/ubuntu_configure
+
+2. Run the staged post-install scripts:
+   cd ~/ubuntu_configure/post_install
+   sudo ./1_a_user_psswd_mods.sh
+   # Continue with the remaining scripts as documented in post_install/README.md
+
+3. Keep the repository up to date:
+   cd ~/ubuntu_configure
+   git pull
+
+4. Configure networking
+       - Edit /etc/netplan/*.yaml so each interface has optional: true. Example:  network:
+           version: 2
+           ethernets:
+             enp0s31f6:
+               dhcp4: true
+               optional: true
+           wifis:
+             wlp3s0:
+               access-points:
+                 "YourSSID":
+                   password: "YourPassphrase"
+               dhcp4: true
+               optional: true
+       - Apply with sudo netplan apply. “Optional” tells systemd-networkd to skip the boot wait even if the link never appears.
+
+Happy building!

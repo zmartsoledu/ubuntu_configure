@@ -1,19 +1,25 @@
 # ubuntu_configure
-Pre and post configuration scripts to generate a preseeded ubuntu image and extend the base system with extra packages afterwards.
 
-The gist of this set of scripts is creating an Ubuntu system with maximum automation, minimum user input and commonly used power-user and developer tools pre-installed, pre-configured. 
+This repository automates both halves of building a reproducible Ubuntu 24.04 workstation:
 
-If you want finer control over what is installed and how it is configured, you probably are better off configuring your system manually. Also, please bear in mind that the installation doesn't aim to retain any previously installed OS or data, so, if there is any important data on the target installation medium, please take a full backup before starting.
+- `pre_install/` turns the stock Ubuntu Server ISO into an unattended, LUKS-encrypted autoinstall image (or cloud-init seed) with safe defaults.
+- `post_install/` layers the rest of the system — from a hardened server baseline all the way to a desktop/laptop with developer tooling — using staged shell scripts.
 
-The post-install configuration steps are broken down to functional layers. So, you can either configure a headless Ubuntu server or a full blown desktop environment.
+> ! These scripts repartition target disks and assume fresh installs. Back up important data before proceeding, and only run them on machines you intend to wipe.
 
-**Currently tested target environments**
+## Workflow overview
 
-*Ubuntu 22.04 LTS*
+1. **Create installation media (pre_install/README.md).**
+   - Run `pre_install/configure_autoinstall.sh` to confirm or override the bootstrap user, password, hostname, locale, timezone, LUKS passphrase, etc. (the script now saves your answers in `post_install/defaults_override.env`, falling back to the tracked `defaults.env` when no overrides exist).
+   - Download the Ubuntu 24.04 Server ISO.
+   - Use `pre_install/build_media.sh --iso /path/to/iso` to generate both the custom ISO and the matching `seed.img`, with an optional USB flashing step (the script can also download the latest 24.04 images for you).
+   - The helper copies `user-data`, `meta-data`, and the post-install checklist into `/cdrom/nocloud/` and onto the installed system so instructions are always available.
+2. **Run staged post-install scripts (post_install/README.md).**
+   - Start from the freshly installed encrypted server.
+   - Execute the scripts in numerical order to add users, purge snap/flatpak components, install packages, add graphics drivers, GNOME, optional apps, laptop tweaks, and enable LUKS auto-unlock.
 
-For more information, please refer to [this wiki link](https://github.com/zmartsoledu/ubuntu_configure/wiki).
+The stages are intentionally modular, so you can stop after the server baseline or continue to a full desktop experience. See the per-folder README files for detailed instructions and prerequisites.
 
+**Tested target:** Ubuntu 24.04 LTS
 
-
-
-Everything in this repository comes under the [MIT license](https://github.com/zmartsoledu/ubuntu_configure/blob/master/LICENSE)
+Additional background lives in the [project wiki](https://github.com/zmartsoledu/ubuntu_configure/wiki). Everything here is released under the [MIT license](LICENSE).

@@ -1,0 +1,4 @@
+# Netplan base file
+network:
+  version: 2
+  renderer: NetworkManager

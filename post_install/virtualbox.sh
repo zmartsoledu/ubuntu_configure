@@ -12,10 +12,37 @@ sudo killall VirtualBox >/dev/null 2>&1
 
 distro_codename=$(cat /etc/*-release | grep "CODENAME=" | tail -n1 | sed 's@.*=\(.*\)@\1@')
 
-wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo apt-key add -
-wget -q https://www.virtualbox.org/download/oracle_vbox.asc -O- | sudo apt-key add -
+# Clean up legacy apt-key entries for virtualbox from /etc/apt/trusted.gpg
+if [ -f /etc/apt/trusted.gpg ]; then
+    for keyid in $(apt-key --keyring /etc/apt/trusted.gpg list 2>/dev/null | grep -B1 -iE "virtualbox|oracle" | grep -oE '[A-F0-9]{8,}' || true); do
+        [ -n "$keyid" ] && apt-key --keyring /etc/apt/trusted.gpg del "$keyid" 2>/dev/null || true
+    done
+fi
 
-add_to_sources_list "http://download.virtualbox.org/virtualbox/debian" "contrib"
+# Remove any conflicting legacy source files for virtualbox
+for f in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+    [ -f "$f" ] || continue
+    if grep -q "virtualbox" "$f" 2>/dev/null; then
+        if ! grep -q "signed-by=/etc/apt/keyrings/virtualbox.gpg" "$f" 2>/dev/null; then
+            func_print_info_message "Removing conflicting legacy source: $f"
+            rm -f "$f"
+        fi
+    fi
+done
+
+# Remove virtualbox entries from main sources.list if present
+if grep -q "virtualbox" /etc/apt/sources.list 2>/dev/null; then
+    func_print_info_message "Removing virtualbox entries from /etc/apt/sources.list"
+    sed -i "/virtualbox/d" /etc/apt/sources.list 2>/dev/null || true
+fi
+
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://www.virtualbox.org/download/oracle_vbox_2016.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/virtualbox-2016.gpg >/dev/null
+curl -fsSL https://www.virtualbox.org/download/oracle_vbox.asc | gpg --dearmor | sudo tee /etc/apt/keyrings/virtualbox.gpg >/dev/null
+chmod 644 /etc/apt/keyrings/virtualbox-2016.gpg /etc/apt/keyrings/virtualbox.gpg
+# add deb source with signed-by
+distro=$(lsb_release -sc)
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/virtualbox.gpg] http://download.virtualbox.org/virtualbox/debian $distro contrib" | sudo tee /etc/apt/sources.list.d/virtualbox.list >/dev/null
 
 apt_update
 echo "attempting to remove old virtualbox packages"

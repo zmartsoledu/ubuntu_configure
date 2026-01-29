@@ -7,7 +7,19 @@ fi
 
 source ./common_bash_funcs.sh
 
-snap_install "code" "--classic"
+KEYRING=/etc/apt/keyrings/packages.microsoft.gpg
+REPO_FILE=/etc/apt/sources.list.d/vscode.list
+
+mkdir -p /etc/apt/keyrings
+if [ ! -f "$KEYRING" ]; then
+	curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee "$KEYRING" >/dev/null
+	chmod 644 "$KEYRING"
+fi
+
+echo "deb [arch=amd64,arm64,armhf signed-by=$KEYRING] https://packages.microsoft.com/repos/code stable main" > "$REPO_FILE"
+
+apt_update
+apt_install_auto_yes code
 
 func_print_info_message "script end `basename "$0"`"
 

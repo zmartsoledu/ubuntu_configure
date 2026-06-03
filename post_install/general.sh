@@ -85,6 +85,7 @@ apt_group_install_auto_yes  "curl \
 	htop \
 	cpufrequtils \
 	gh \
+	ripgrep \
 	ruby-full"
 	
 mkdir -p /tftpboot && chmod 777 /tftpboot && chown nobody:$SUDO_USER /tftpboot
